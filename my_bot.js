@@ -1,0 +1,172 @@
+const { timeStamp } = require("console");
+const Discord = require("discord.js")
+const client = new Discord.Client()
+const {prefix, token, clientID, generalChannelID, botID,
+        ownerID} = require("./config.json");
+const client_presence = require('discord-rich-presence')(ownerID);
+
+// Can trigger multiple times (unlike .once)
+client.on("ready", () =>{
+    console.log("Connected as " + client.user.tag)
+    // client.user.setActivity("with JavaScript")
+    client.user.setActivity("Youtube", {type:"WATCHING"})
+    // client.client_presence.updatePresence()
+    client.guilds.cache.forEach((guilds) => {
+        console.log(guilds.name)
+        guilds.channels.cache.forEach((channels) => {
+            console.log(`-- ${channels.name} ${channels.type} ${channels.id}`)
+        })
+    })
+
+    let generalChannel = client.channels.cache.get(generalChannelID)
+    const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
+
+
+    generalChannel.send(attachment)
+    .then(msg => {
+        msg.delete({timeout: 9000})
+    }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
+    // generalChannel.send("Hello World")
+})
+
+client_presence.updatePresence({
+    state: 'MacOS Mojave',
+    // details: '🐍',
+    startTimestamp: Date.now(),
+    endTimestamp: Date.now() + 1337,
+    largeImageKey: 'virtualbox',
+    largeText: "virtualbox",
+    smallImageKey: 'mojave',
+    smallText: "mojave",
+    instance: true,
+});
+
+client.on("message", (receivedMessage) => {
+    // if (receivedMessage.author == client.user) {
+    //     return
+    // }
+
+    if (receivedMessage.author.bot) {
+        return
+    }
+    // receivedMessage.channel.send("Messaged received " + receivedMessage.author.toString() + ": " + receivedMessage.content)
+    // // receivedMessage.react("🤐")
+    // // receivedMessage.guild.emojis.cache.forEach(customEmoji => {
+    // //     console.log(`${customEmoji.name} ${customEmoji.id}`)
+    // //     receivedMessage.react(customEmoji)
+    // // })
+    // let customEmoji = receivedMessage.guild.emojis.cache.get(botID)
+    // receivedMessage.react(customEmoji)
+    console.log(receivedMessage.content);
+    if (receivedMessage.content.startsWith(prefix)) {
+        processCommand(receivedMessage);
+    }
+})
+
+function randomColourPicker() {
+    return [0x7fffd4, 0x458b74, 0x838b8b, 0xff4040, 0x5f9ea0,
+    0x7fff00, 0xff3e96, 0x00c5cd, 0xee5c42, 0xcdc9c9, 0xffa54f, 0xee7942,
+    0xee8262, 0xeeb4b4, 0xffbbff, 0x98fb98, 0x00fa9a, 0xab82ff, 0xee30a7,
+    0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.random() * 23]
+}
+
+function processCommand(receivedMessage) {
+    let fullCommand = receivedMessage.content.substr(1)
+    // Regex / +/ if many spaces provided
+    let splitCommand = fullCommand.split(/ +/)
+    let primaryCommand = splitCommand[0]
+    let arguments = splitCommand.slice(1)
+
+    console.log("Arguments " + arguments)
+    console.log("SplitCommand " + splitCommand)
+    console.log("PrimaryCommand " + primaryCommand)
+
+    if (!splitCommand.length || !primaryCommand.length) {
+        // receivedMessage.reply("no arguments were provided, please use command ?help")
+        const user = receivedMessage.mentions.users.first() || receivedMessage.author
+        const userDetails = client.users.cache.get(user.id)
+        console.log(userDetails.discriminator)
+        console.log(receivedMessage.mentions)
+        const exampleEmbed = new Discord.MessageEmbed()
+            .setColor(randomColourPicker())
+            .setTitle("User Profile")
+            .setAuthor(`${userDetails.tag}`, user.avatarURL())
+            .setDescription(`${'HI'}`)
+            .addField('Inline field title', 'Some value here', true)
+            .setThumbnail(user.avatarURL())
+        receivedMessage.channel.send(exampleEmbed);
+    } else if (primaryCommand == "help") {
+        helpCommand(arguments, receivedMessage);
+    } else if (primaryCommand == "play") {
+        play(arguments, receivedMessage);
+    } else if (primaryCommand == "whois") {
+        const user = receivedMessage.mentions.users.first() || receivedMessage.author
+        var userDetails = client.users.cache.get(user.id)
+        var member = receivedMessage.guild.member(userDetails)
+        var date = new Date();
+        // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
+        // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
+        // https://stackoverflow.com/a/50374666/14151099
+        const messageEmbed = {
+            color: randomColourPicker(),
+            title: "User Profile",
+            author: {
+                name: `${userDetails.tag}`,
+                icon_url: `${user.avatarURL()}`,
+            },
+            thumbnail: {
+                url: `${user.avatarURL()}`
+            },
+            fields: [
+                {
+                    name: "**Joined Date**",
+                    value: `${member.joinedAt.toDateString()}`,
+                    inline: true,
+                },
+                {
+                    name: '\u200b',
+                    value: '\u200b',
+                    inline: false,
+                },
+                {
+                    name: "**Registered Date**",
+                    value: `${userDetails.createdAt.toDateString()}`,
+                    inline: true,
+                }
+            ],
+            description: `<@!${userDetails.id}>`,
+            footer: {
+                text: `ID: ${userDetails.id} \n` +
+                `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+            }
+        }
+
+        receivedMessage.channel.send({embed: messageEmbed});
+        console.log(receivedMessage.author);
+    }
+}
+
+function helpCommand(arguments, receivedMessage) {
+    if (arguments.length == 0) {
+        receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
+        `${prefix}help [topic]`);
+    } else {
+        receivedMessage.channel.send("It looks like you need help with " +
+        arguments)
+    }
+}
+
+function play(arguments, receivedMessage) {
+    if (arguments[0] == "movie") {
+        if (arguments[1] == "joker") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/529500682781327396/730896880925671494/Joker_2019.webm")
+        } else if (arguments[1] == "shrek") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/572172622973108225/572172751691972618/Shrek_VP9-60k_Opus-20300-1.webm")
+        }
+    } else {
+        receivedMessage.channel.send("Invalid command. ")
+    }
+}
+
+client.login(token)
+
