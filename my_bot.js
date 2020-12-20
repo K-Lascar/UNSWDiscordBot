@@ -2,8 +2,8 @@ const { timeStamp } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
-        ownerID} = require("./config.json");
-const client_presence = require('discord-rich-presence')(ownerID);
+        ownerKey} = require("./config.json");
+const client_presence = require('discord-rich-presence')(ownerKey);
 
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
@@ -33,7 +33,6 @@ client_presence.updatePresence({
     state: 'MacOS Mojave',
     // details: '🐍',
     startTimestamp: Date.now(),
-    endTimestamp: Date.now() + 1337,
     largeImageKey: 'virtualbox',
     largeText: "virtualbox",
     smallImageKey: 'mojave',
