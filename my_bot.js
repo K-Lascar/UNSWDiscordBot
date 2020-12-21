@@ -1,4 +1,3 @@
-"use strict";
 const { timeStamp } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
@@ -9,9 +8,18 @@ const fs = require("fs");
 
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
+
+    // var activityIndex = 0;
+    // setInterval(() => {
+    //     var activityList = ["Youtube", "outubeY", "utubeYo", "tubeYou",
+    //     "ubeYout", "beYoutu", "eYoutub"]
+    //     client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
+    //     activityIndex = (activityIndex + 1) % activityList.length;
+    // }, 500);
     console.log("Connected as " + client.user.tag)
     // client.user.setActivity("with JavaScript")
     client.user.setActivity("Youtube", {type:"WATCHING"})
+    // client.user.setAvatar()
     // client.client_presence.updatePresence()
     client.guilds.cache.forEach((guilds) => {
         console.log(guilds.name)
@@ -23,7 +31,6 @@ client.on("ready", () =>{
     let generalChannel = client.channels.cache.get(generalChannelID)
     const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
 
-
     generalChannel.send(attachment)
     .then(msg => {
         msg.delete({timeout: 9000})
@@ -31,6 +38,8 @@ client.on("ready", () =>{
     // generalChannel.send("Hello World")
 })
 
+
+// Interesting implementation add ability to change status, such that it moves (has motion).
 client_presence.updatePresence({
     state: 'MacOS Mojave',
     // details: '🐍',
@@ -72,17 +81,17 @@ function randomColourPicker() {
 }
 
 function processCommand(receivedMessage) {
-    let fullCommand = receivedMessage.content.substr(receivedMessage.length + 1)
+    var fullCommand = receivedMessage.content.substr(receivedMessage.content.length)
     // Regex / +/ if many spaces provided
-    let splitCommand = fullCommand.split(/ +/)
-    let primaryCommand = splitCommand[0]
-    let arguments = splitCommand.slice(1)
+    var splitCommand = fullCommand.split(/ +/)
+    var primaryCommand = splitCommand[0]
+    var arguments = splitCommand.slice(1)
     console.log(receivedMessage.content)
     console.log("Arguments: " + arguments)
     console.log("SplitCommand: " + splitCommand)
     console.log("PrimaryCommand: " + primaryCommand)
     if (!splitCommand.length || !primaryCommand.length) {
-        receivedMessage.reply("no arguments were provided, please use command" `${prefix}help`)
+        receivedMessage.reply("no arguments were provided, please use command: " + `**${prefix} help**`)
         // receivedMessage.channel.send(exampleEmbed);
     } else if (primaryCommand == "help") {
         helpCommand(arguments, receivedMessage);
@@ -94,7 +103,7 @@ function processCommand(receivedMessage) {
         // a substring (look for it, if doesn't exist don't search for it).
         // Or they specify a id search for that.
 
-        var user = retrieveMentionUser(receivedMessage, arguments);
+        var user = retrieveMentionUser(receivedMessage, arguments, 0);
         if (user) {
             var userDetails = client.users.cache.get(user.id);
             var member = receivedMessage.guild.member(userDetails);
@@ -110,11 +119,12 @@ function processCommand(receivedMessage) {
                 primaryCommand == "update" ||
                 primaryCommand == "modify") &&
                 arguments.length >= 4) {
-        // botName change prefix to apples
+        // botName change prefix as/with/to apples
         // botName update harold as/with/to mod
-        var userExists = retrieveMentionUser(receivedMessage, arguments);
-        if (arguments[1] == "prefix" && checkConjunctive(arguments[3])) {
-
+        var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
+        if (arguments[1] == "prefix" && checkConjunctive(arguments[2])) {
+            updatePrefix(arguments[3]);
+            receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
         } else if (userExists) {
 
         }
@@ -183,10 +193,10 @@ function createWhoIsEmbed(member, user, userDetails) {
     return messageEmbed;
 }
 
-function retrieveMentionUser(receivedMessage, arguments) {
+function retrieveMentionUser(receivedMessage, arguments, index) {
     var isMentioned = receivedMessage.mentions.users.first();
-    var isIdentified = client.users.cache.get(arguments[0]);
-    var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[0]));
+    var isIdentified = client.users.cache.get(arguments[index]);
+    var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[index]));
     return isMentioned || isIdentified || isSelected;
 }
 
