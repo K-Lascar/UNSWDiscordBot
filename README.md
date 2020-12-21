@@ -4,6 +4,8 @@ This program is a DiscordBot, that I'm currently working on in order to get more
 
 After planning what to do with this bot, I've decided we should have the following implementations:
 
+## IMPLEMENTATION
+
 1. Job Salary Search
    - Depending on which field you are as a student, you may want to know what is the pay for the work that your career unveils.
 
