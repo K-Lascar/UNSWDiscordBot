@@ -4,6 +4,8 @@ const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
         ownerKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
+const fs = require("fs");
+
 
 "use strict";
 
@@ -72,7 +74,7 @@ function randomColourPicker() {
 }
 
 function processCommand(receivedMessage) {
-    let fullCommand = receivedMessage.content.substr(1)
+    let fullCommand = receivedMessage.content.substr(prefix)
     // Regex / +/ if many spaces provided
     let splitCommand = fullCommand.split(/ +/)
     let primaryCommand = splitCommand[0]
@@ -81,7 +83,6 @@ function processCommand(receivedMessage) {
     console.log("Arguments: " + arguments)
     console.log("SplitCommand: " + splitCommand)
     console.log("PrimaryCommand: " + primaryCommand)
-
     if (!splitCommand.length || !primaryCommand.length) {
         // receivedMessage.reply("no arguments were provided, please use command ?help")
         const user = receivedMessage.mentions.users.first() || receivedMessage.author
@@ -116,9 +117,9 @@ function processCommand(receivedMessage) {
         }
 
         receivedMessage.channel.send({embed: embed});
-    }
+    } else if (primaryCommand == "purge") {
 
-    // console.log(receivedMessage.author);
+    }
 }
 
 function createErrorEmbed(arguments) {
@@ -175,10 +176,21 @@ function retrieveMentionUser(receivedMessage, arguments) {
     var isMentioned = receivedMessage.mentions.users.first();
     var isIdentified = client.users.cache.get(arguments[0]);
     var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[0]));
-    console.log(isMentioned || isIdentified || isSelected)
     return isMentioned || isIdentified || isSelected;
 }
 
+function updatePrefix(newPrefix) {
+    // https://stackoverflow.com/a/21035861
+    var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
+    jsonFile["prefix"] = newPrefix;
+    // https://attacomsian.com/blog/javascript-pretty-print-json
+    fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
+}
+
+function getCurrentPrefix(receivedMessage) {
+    var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
+    receivedMessage.channel.send(`The current prefix is ${jsonFile["prefix"]}`)
+}
 
 function helpCommand(arguments, receivedMessage) {
     if (arguments.length == 0) {
@@ -196,6 +208,8 @@ function play(arguments, receivedMessage) {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/529500682781327396/730896880925671494/Joker_2019.webm")
         } else if (arguments[1] == "shrek") {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/572172622973108225/572172751691972618/Shrek_VP9-60k_Opus-20300-1.webm")
+        } else if (arguments[1] == "mario") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/378993812309016577/771666532551622656/long_endless_stairs.webm")
         }
     } else {
         receivedMessage.channel.send("Invalid command. ")
