@@ -1,11 +1,11 @@
+"use strict";
 const { timeStamp } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
         ownerKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
-
-"use strict";
+const fs = require("fs");
 
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
@@ -58,8 +58,8 @@ client.on("message", (receivedMessage) => {
     // // })
     // let customEmoji = receivedMessage.guild.emojis.cache.get(botID)
     // receivedMessage.react(customEmoji)
-    console.log(receivedMessage.content);
-    if (receivedMessage.content.startsWith(prefix)) {
+    // console.log(receivedMessage.content);
+    if (receivedMessage.content.startsWith(prefix + " ")) {
         processCommand(receivedMessage);
     }
 })
@@ -72,30 +72,18 @@ function randomColourPicker() {
 }
 
 function processCommand(receivedMessage) {
-    let fullCommand = receivedMessage.content.substr(1)
+    let fullCommand = receivedMessage.content.substr(receivedMessage.length + 1)
     // Regex / +/ if many spaces provided
     let splitCommand = fullCommand.split(/ +/)
     let primaryCommand = splitCommand[0]
     let arguments = splitCommand.slice(1)
-
+    console.log(receivedMessage.content)
     console.log("Arguments: " + arguments)
     console.log("SplitCommand: " + splitCommand)
     console.log("PrimaryCommand: " + primaryCommand)
-
     if (!splitCommand.length || !primaryCommand.length) {
-        // receivedMessage.reply("no arguments were provided, please use command ?help")
-        const user = receivedMessage.mentions.users.first() || receivedMessage.author
-        const userDetails = client.users.cache.get(user.id)
-        console.log(userDetails.discriminator);
-        console.log(receivedMessage.mentions);
-        const exampleEmbed = new Discord.MessageEmbed()
-            .setColor(randomColourPicker())
-            .setTitle("User Profile")
-            .setAuthor(`${userDetails.tag}`, user.avatarURL())
-            .setDescription(`${'HI'}`)
-            .addField('Inline field title', 'Some value here', true)
-            .setThumbnail(user.avatarURL())
-        receivedMessage.channel.send(exampleEmbed);
+        receivedMessage.reply("no arguments were provided, please use command" `${prefix}help`)
+        // receivedMessage.channel.send(exampleEmbed);
     } else if (primaryCommand == "help") {
         helpCommand(arguments, receivedMessage);
     } else if (primaryCommand == "play") {
@@ -116,11 +104,35 @@ function processCommand(receivedMessage) {
         }
 
         receivedMessage.channel.send({embed: embed});
-    }
+    } else if (primaryCommand == "purge") {
 
-    // console.log(receivedMessage.author);
+    } else if ((primaryCommand == "change" ||
+                primaryCommand == "update" ||
+                primaryCommand == "modify") &&
+                arguments.length >= 4) {
+        // botName change prefix to apples
+        // botName update harold as/with/to mod
+        var userExists = retrieveMentionUser(receivedMessage, arguments);
+        if (arguments[1] == "prefix" && checkConjunctive(arguments[3])) {
+
+        } else if (userExists) {
+
+        }
+    } else if (primaryCommand == "test") {
+
+    } else if (primaryCommand == "weather") {
+        //https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
+        // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
+    } else {
+
+    }
 }
 
+function checkConjunctive(argument) {
+    return ["with", "as", "to"].includes(argument);
+}
+
+// function chatWith
 function createErrorEmbed(arguments) {
     var errorEmbed = {
         color: 0xff4500,    // Color orange red.
@@ -175,10 +187,21 @@ function retrieveMentionUser(receivedMessage, arguments) {
     var isMentioned = receivedMessage.mentions.users.first();
     var isIdentified = client.users.cache.get(arguments[0]);
     var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[0]));
-    console.log(isMentioned || isIdentified || isSelected)
     return isMentioned || isIdentified || isSelected;
 }
 
+function updatePrefix(newPrefix) {
+    // https://stackoverflow.com/a/21035861
+    var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
+    jsonFile["prefix"] = newPrefix;
+    // https://attacomsian.com/blog/javascript-pretty-print-json
+    fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
+}
+
+function getCurrentPrefix(receivedMessage) {
+    var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
+    receivedMessage.channel.send(`The current prefix is ${jsonFile["prefix"]}`)
+}
 
 function helpCommand(arguments, receivedMessage) {
     if (arguments.length == 0) {
@@ -196,9 +219,11 @@ function play(arguments, receivedMessage) {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/529500682781327396/730896880925671494/Joker_2019.webm")
         } else if (arguments[1] == "shrek") {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/572172622973108225/572172751691972618/Shrek_VP9-60k_Opus-20300-1.webm")
+        } else if (arguments[1] == "mario") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/378993812309016577/771666532551622656/long_endless_stairs.webm")
         }
     } else {
-        receivedMessage.channel.send("Invalid command. ")
+        receivedMessage.channel.send("Invalid Video. ")
     }
 }
 
