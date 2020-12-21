@@ -2,8 +2,10 @@ const { timeStamp } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
-        ownerID} = require("./config.json");
-const client_presence = require('discord-rich-presence')(ownerID);
+        ownerKey} = require("./config.json");
+const client_presence = require('discord-rich-presence')(ownerKey);
+
+"use strict";
 
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
@@ -33,7 +35,6 @@ client_presence.updatePresence({
     state: 'MacOS Mojave',
     // details: '🐍',
     startTimestamp: Date.now(),
-    endTimestamp: Date.now() + 1337,
     largeImageKey: 'virtualbox',
     largeText: "virtualbox",
     smallImageKey: 'mojave',
@@ -77,16 +78,16 @@ function processCommand(receivedMessage) {
     let primaryCommand = splitCommand[0]
     let arguments = splitCommand.slice(1)
 
-    console.log("Arguments " + arguments)
-    console.log("SplitCommand " + splitCommand)
-    console.log("PrimaryCommand " + primaryCommand)
+    console.log("Arguments: " + arguments)
+    console.log("SplitCommand: " + splitCommand)
+    console.log("PrimaryCommand: " + primaryCommand)
 
     if (!splitCommand.length || !primaryCommand.length) {
         // receivedMessage.reply("no arguments were provided, please use command ?help")
         const user = receivedMessage.mentions.users.first() || receivedMessage.author
         const userDetails = client.users.cache.get(user.id)
-        console.log(userDetails.discriminator)
-        console.log(receivedMessage.mentions)
+        console.log(userDetails.discriminator);
+        console.log(receivedMessage.mentions);
         const exampleEmbed = new Discord.MessageEmbed()
             .setColor(randomColourPicker())
             .setTitle("User Profile")
@@ -100,51 +101,84 @@ function processCommand(receivedMessage) {
     } else if (primaryCommand == "play") {
         play(arguments, receivedMessage);
     } else if (primaryCommand == "whois") {
-        const user = receivedMessage.mentions.users.first() || receivedMessage.author
-        var userDetails = client.users.cache.get(user.id)
-        var member = receivedMessage.guild.member(userDetails)
-        var date = new Date();
-        // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
-        // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
-        // https://stackoverflow.com/a/50374666/14151099
-        const messageEmbed = {
-            color: randomColourPicker(),
-            title: "User Profile",
-            author: {
-                name: `${userDetails.tag}`,
-                icon_url: `${user.avatarURL()}`,
-            },
-            thumbnail: {
-                url: `${user.avatarURL()}`
-            },
-            fields: [
-                {
-                    name: "**Joined Date**",
-                    value: `${member.joinedAt.toDateString()}`,
-                    inline: true,
-                },
-                {
-                    name: '\u200b',
-                    value: '\u200b',
-                    inline: false,
-                },
-                {
-                    name: "**Registered Date**",
-                    value: `${userDetails.createdAt.toDateString()}`,
-                    inline: true,
-                }
-            ],
-            description: `<@!${userDetails.id}>`,
-            footer: {
-                text: `ID: ${userDetails.id} \n` +
-                `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
-            }
+        // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
+        // Instead of select receivedMessage, we need to check if user specifies
+        // a substring (look for it, if doesn't exist don't search for it).
+        // Or they specify a id search for that.
+
+        var user = retrieveMentionUser(receivedMessage, arguments);
+        if (user) {
+            var userDetails = client.users.cache.get(user.id);
+            var member = receivedMessage.guild.member(userDetails);
+            var embed = createWhoIsEmbed(member, user, userDetails);
+        } else {
+            var embed = createErrorEmbed(arguments);
         }
 
-        receivedMessage.channel.send({embed: messageEmbed});
-        console.log(receivedMessage.author);
+        receivedMessage.channel.send({embed: embed});
     }
+
+    // console.log(receivedMessage.author);
 }
+
+function createErrorEmbed(arguments) {
+    var errorEmbed = {
+        color: 0xff4500,    // Color orange red.
+        title: `❌ Invalid User ${arguments.join(" ")}`,
+    }
+    return errorEmbed;
+}
+
+function createWhoIsEmbed(member, user, userDetails) {
+    var date = new Date();
+
+    // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
+    // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
+    // https://stackoverflow.com/a/50374666/14151099
+    var messageEmbed = {
+        color: randomColourPicker(),
+        title: "User Profile",
+        author: {
+            name: `${userDetails.tag}`,
+            icon_url: `${user.avatarURL()}`,
+        },
+        thumbnail: {
+            url: `${user.avatarURL()}`
+        },
+        fields: [
+            {
+                name: "**Joined Date**",
+                value: `${member.joinedAt.toDateString()}`,
+                inline: true,
+            },
+            {
+                name: '\u200b',
+                value: '\u200b',
+                inline: true,
+            },
+            {
+                name: "**Registered Date**",
+                value: `${userDetails.createdAt.toDateString()}`,
+                inline: true,
+            }
+        ],
+        description: `<@!${userDetails.id}>`,
+        footer: {
+            text: `ID: ${userDetails.id} \n` +
+            `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+        }
+    }
+    return messageEmbed;
+}
+
+function retrieveMentionUser(receivedMessage, arguments) {
+    var isMentioned = receivedMessage.mentions.users.first();
+    var isIdentified = client.users.cache.get(arguments[0]);
+    var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[0]));
+    console.log(isMentioned || isIdentified || isSelected)
+    return isMentioned || isIdentified || isSelected;
+}
+
 
 function helpCommand(arguments, receivedMessage) {
     if (arguments.length == 0) {
