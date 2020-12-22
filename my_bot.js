@@ -2,7 +2,7 @@ const { timeStamp } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
-        ownerKey} = require("./config.json");
+        ownerKey, openWeatherAPIKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
 const fs = require("fs");
 const path = require("path");
@@ -10,18 +10,19 @@ const path = require("path");
 client.on("ready", () =>{
 
     var activityIndex = 0;
+    // Updates Bot's activity every 30 minutes.
     setInterval(() => {
         var activityList = ["📺Youtube📺", "📺outubeY📺", "📺utubeYo📺", "📺tubeYou📺",
         "📺ubeYout📺", "📺beYoutu📺", "📺eYoutub📺"]
         client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
         activityIndex = (activityIndex + 1) % activityList.length;
     }, 30000);
+
+    // Updates Bot's Avatar profile picture every 30 minutes.
     setInterval(() => {
-        console.log(retrieveAvatar());
         client.user.setAvatar(path.join(".", retrieveAvatar()));
     }, 1800000);
     console.log("Connected as " + client.user.tag)
-    // client.user.setActivity("with JavaScript")
     client.user.setActivity("Youtube", {type:"WATCHING"})
     // client.client_presence.updatePresence()
     client.guilds.cache.forEach((guilds) => {
@@ -139,21 +140,27 @@ function processCommand(receivedMessage) {
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
                 primaryCommand == "modify") &&
-                arguments.length >= 4) {
+                arguments.length >= 3) {
         // botName change prefix as/with/to apples
         // botName update harold as/with/to mod
         var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
         if (arguments[1] == "prefix" && checkConjunctive(arguments[2])) {
+            console.log(receivedMessage.author);
             updatePrefix(arguments[3]);
             receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
         } else if (userExists) {
 
         }
     } else if (primaryCommand == "test") {
-
+        authorId = receivedMessage.author.id
+        receivedMessage.channel.send(`Hello <@${authorId}>`)
     } else if (primaryCommand == "weather") {
         //https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
         // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
+        if (arguments.length >= 1) {
+            // let weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${openWeatherAPIKey}`
+
+        }
     } else {
 
     }
