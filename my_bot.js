@@ -5,21 +5,24 @@ const {prefix, token, clientID, generalChannelID, botID,
         ownerKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
 const fs = require("fs");
-
+const path = require("path");
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
 
-    // var activityIndex = 0;
-    // setInterval(() => {
-    //     var activityList = ["Youtube", "outubeY", "utubeYo", "tubeYou",
-    //     "ubeYout", "beYoutu", "eYoutub"]
-    //     client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
-    //     activityIndex = (activityIndex + 1) % activityList.length;
-    // }, 500);
+    var activityIndex = 0;
+    setInterval(() => {
+        var activityList = ["📺Youtube📺", "📺outubeY📺", "📺utubeYo📺", "📺tubeYou📺",
+        "📺ubeYout📺", "📺beYoutu📺", "📺eYoutub📺"]
+        client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
+        activityIndex = (activityIndex + 1) % activityList.length;
+    }, 30000);
+    setInterval(() => {
+        console.log(retrieveAvatar());
+        client.user.setAvatar(path.join(".", retrieveAvatar()));
+    }, 1800000);
     console.log("Connected as " + client.user.tag)
     // client.user.setActivity("with JavaScript")
     client.user.setActivity("Youtube", {type:"WATCHING"})
-    // client.user.setAvatar()
     // client.client_presence.updatePresence()
     client.guilds.cache.forEach((guilds) => {
         console.log(guilds.name)
@@ -33,7 +36,7 @@ client.on("ready", () =>{
 
     generalChannel.send(attachment)
     .then(msg => {
-        msg.delete({timeout: 9000})
+        msg.delete({timeout: 8000})
     }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
     // generalChannel.send("Hello World")
 })
@@ -73,15 +76,32 @@ client.on("message", (receivedMessage) => {
     }
 })
 
+function retrieveAvatar() {
+    return [
+        path.join("assets", "avatars", "unsw_aqua_logo.png"),
+        path.join("assets", "avatars", "unsw_aus_logo.png"),
+        path.join("assets", "avatars", "unsw_blue_logo.png"),
+        path.join("assets", "avatars", "unsw_brown_logo.png"),
+        path.join("assets", "avatars", "unsw_light_blue_logo.png"),
+        path.join("assets", "avatars", "unsw_light_green_logo.png"),
+        path.join("assets", "avatars", "unsw_light_pink_logo.png"),
+        path.join("assets", "avatars", "unsw_magenta_logo.png"),
+        path.join("assets", "avatars", "unsw_orange_logo.png"),
+        path.join("assets", "avatars", "unsw_red_logo.png"),
+        path.join("assets", "avatars", "unsw_salmon_logo.png"),
+
+    ][Math.floor(Math.random() * 11)];
+}
+
 function randomColourPicker() {
     return [0x7fffd4, 0x458b74, 0x838b8b, 0xff4040, 0x5f9ea0,
     0x7fff00, 0xff3e96, 0x00c5cd, 0xee5c42, 0xcdc9c9, 0xffa54f, 0xee7942,
     0xee8262, 0xeeb4b4, 0xffbbff, 0x98fb98, 0x00fa9a, 0xab82ff, 0xee30a7,
-    0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.random() * 23]
+    0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)]
 }
 
 function processCommand(receivedMessage) {
-    var fullCommand = receivedMessage.content.substr(receivedMessage.content.length)
+    var fullCommand = receivedMessage.content.substr(prefix.length + 1)
     // Regex / +/ if many spaces provided
     var splitCommand = fullCommand.split(/ +/)
     var primaryCommand = splitCommand[0]
@@ -91,7 +111,8 @@ function processCommand(receivedMessage) {
     console.log("SplitCommand: " + splitCommand)
     console.log("PrimaryCommand: " + primaryCommand)
     if (!splitCommand.length || !primaryCommand.length) {
-        receivedMessage.reply("no arguments were provided, please use command: " + `**${prefix} help**`)
+        receivedMessage.reply("no arguments were provided, please use command: "
+        + `**${prefix} help**`)
         // receivedMessage.channel.send(exampleEmbed);
     } else if (primaryCommand == "help") {
         helpCommand(arguments, receivedMessage);
