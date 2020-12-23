@@ -139,17 +139,21 @@ function processCommand(receivedMessage) {
 
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
-                primaryCommand == "modify") &&
-                arguments.length >= 3) {
+                primaryCommand == "modify" ||
+                primaryCommand == "set") &&
+                arguments.length >= 4) {
         // botName change prefix as/with/to apples
         // botName update harold as/with/to mod
         var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
-        if (arguments[1] == "prefix" && checkConjunctive(arguments[2])) {
+        if (arguments[1] == "prefix" && checkLinking(arguments[2])) {
             console.log(receivedMessage.author);
             updatePrefix(arguments[3]);
             receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
-        } else if (userExists) {
-
+        } else if (userExists && checkLinking(arguments[2])) {
+            permissionSliced = arguments.slice(3).join(" ");
+            // https://stackoverflow.com/a/46294003
+            // https://reactgo.com/javascript-variable-regex/
+            permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
         }
     } else if (primaryCommand == "test") {
         authorId = receivedMessage.author.id
@@ -166,7 +170,56 @@ function processCommand(receivedMessage) {
     }
 }
 
-function checkConjunctive(argument) {
+function retrieveConjunctive() {
+    return [
+        "and",
+        "as well as",
+        "with",
+        "moreover",
+        "in addition",
+        "in addition to"
+    ]
+}
+
+
+function retrievePermissions(permission) {
+    // https://discord.com/developers/docs/topics/permissions
+    var permissions = [
+        "CREATE INSTANT INVITE",
+        "KICK MEMBERS",
+        "BAN MEMBERS",
+        "ADMINISTRATOR",
+        "MANAGE CHANNELS",
+        "MANAGE GUILD",
+        "ADD REACTIONS",
+        "VIEW AUDIT LOG",
+        "PRIORITY SPEAKER",
+        "STREAM",
+        "VIEW CHANNEL",
+        "SEND MESSAGES",
+        "SEND TTS MESSAGES",
+        "MANAGE MESSAGES",
+        "EMBED LINKS",
+        "ATTACH FILES",
+        "READ MESSAGE HISTORY",
+        "MENTION EVERYONE",
+        "USE EXTERNAL EMOJIS",
+        "VIEW GUILD INSIGHTS",
+        "CONNECT",
+        "SPEAK",
+        "MUTE MEMBERS",
+        "DEAFEN MEMBERS",
+        "MOVE MEMBERS",
+        "USE VAD",
+        "CHANGE NICKNAME",
+        "MANAGE NICKNAMES",
+        "MANAGE ROLES",
+        "MANAGE WEBHOOKS",
+        "MANAGE EMOJIS"
+    ]
+}
+
+function checkLinking(argument) {
     return ["with", "as", "to"].includes(argument);
 }
 
