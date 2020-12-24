@@ -98,7 +98,7 @@ function randomColourPicker() {
     return [0x7fffd4, 0x458b74, 0x838b8b, 0xff4040, 0x5f9ea0,
     0x7fff00, 0xff3e96, 0x00c5cd, 0xee5c42, 0xcdc9c9, 0xffa54f, 0xee7942,
     0xee8262, 0xeeb4b4, 0xffbbff, 0x98fb98, 0x00fa9a, 0xab82ff, 0xee30a7,
-    0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)]
+    0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)];
 }
 
 function processCommand(receivedMessage) {
@@ -216,7 +216,7 @@ function retrievePermissions(permission) {
         "MANAGE ROLES",
         "MANAGE WEBHOOKS",
         "MANAGE EMOJIS"
-    ]
+    ];
 }
 
 function checkLinking(argument) {
