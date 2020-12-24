@@ -39,7 +39,6 @@ client.on("ready", () =>{
     .then(msg => {
         msg.delete({timeout: 8000})
     }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
-    // generalChannel.send("Hello World")
 })
 
 
@@ -56,9 +55,7 @@ client_presence.updatePresence({
 });
 
 client.on("message", (receivedMessage) => {
-    // if (receivedMessage.author == client.user) {
-    //     return
-    // }
+
 
     if (receivedMessage.author.bot) {
         return
