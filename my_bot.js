@@ -1,22 +1,25 @@
-const { timeStamp } = require("console");
+// const { timeStamp, Console } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
         ownerKey, openWeatherAPIKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
+const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
+const {spawn} = require("child_process");
+
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
 
-    var activityIndex = 0;
-    // Updates Bot's activity every 30 minutes.
-    setInterval(() => {
-        var activityList = ["📺Youtube📺", "📺outubeY📺", "📺utubeYo📺", "📺tubeYou📺",
-        "📺ubeYout📺", "📺beYoutu📺", "📺eYoutub📺"]
-        client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
-        activityIndex = (activityIndex + 1) % activityList.length;
-    }, 30000);
+    // var activityIndex = 0;
+    // // Updates Bot's activity every 30 minutes.
+    // setInterval(() => {
+    //     var activityList = ["📺Youtube📺", "📺outubeY📺", "📺utubeYo📺", "📺tubeYou📺",
+    //     "📺ubeYout📺", "📺beYoutu📺", "📺eYoutub📺"]
+    //     client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
+    //     activityIndex = (activityIndex + 1) % activityList.length;
+    // }, 30000);
 
     // Updates Bot's Avatar profile picture every 30 minutes.
     setInterval(() => {
@@ -160,11 +163,118 @@ function processCommand(receivedMessage) {
         // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
         if (arguments.length >= 1) {
             // let weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${openWeatherAPIKey}`
-
+            embedWeather(receivedMessage, arguments);
         }
     } else {
 
     }
+}
+
+
+async function embedWeather(message, arguments) {
+    var response = await retrieveCity(message, arguments.join());
+
+}
+
+function retrieveConfusedEmojis() {
+    return ["😮", "🙁", "😕", "😧", "😢", "😞"][Math.floor(Math.random() * 6)]
+}
+
+function retrieveCity(message, argumentsJoined) {
+    return new Promise(resolve => {
+        const location = spawn("python", ["location.py", argumentsJoined]);
+        location.stdout.on("data", (data) => {
+            var result = data.toString();
+
+            if (result === "[]") {
+                message.reply("I'm sorry that city doesn't exist! " +
+                retrieveConfusedEmojis());
+            } else {
+                createWeatherEmbed(argumentsJoined, result);
+            }
+        })
+        location.on("close", (code) => {
+            console.log(`Closed All Stdio with code: ${code}`);
+        })
+        location.on("exit", (code) => {
+            console.log(`Exited Child Process with code: ${code}`);
+            resolve(1);
+        })
+    })
+}
+
+function getWeatherEmoji(iconCode){
+    // Object based on https://openweathermap.org/weather-conditions
+    return {
+        "01d": "🌞",    // Clear Skys
+        "01n": "🌑",
+        "02d": "⛅",    // Few Clouds
+        "02n": "⛅",
+        "03d": "☁",     // Scattered Clouds
+        "03n": "☁",
+        "04d": "☁☁",    // Broken Clouds
+        "04n": "☁☁",
+        "09d": "🌧",     // Shower Rain
+        "09n": "🌧",
+        "10d": "🌦",     // Rain
+        "10n": "🌦",
+        "11d": "🌩",     // Thunderstorm
+        "11n": "🌩",
+        "13d": "🌨",     // Snow
+        "13n": "🌨",
+        "50d": "🌫",     // Mist
+        "50n": "🌫"
+    }[iconCode];
+}
+
+function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
+    icon) {
+    return [
+        `Currently in ${cityName} it's ${temp} ${getWeatherEmoji(icon)}. The ` +
+        `forecast for today is ${weatherDesc} a low of ${tempMin} and highs ` +
+        `of ${tempMax}.`,
+        `The weather right now in ${cityName} is ${temp} it is expected to ` +
+        `have ${weatherDesc} ${getWeatherEmoji(icon)}. We can see as much as ` +
+        `${tempMax} and as low as ${tempMin}.`,
+        `We're seeing ${getWeatherEmoji(icon)} heading into ${cityName}. ` +
+        `Currently we're having ${temp} and ${weatherDesc} it is expected to ` +
+        `rise to ${tempMax} and get low as ${tempMin}.`
+    ][Math.floor(Math.random() * 3)];
+}
+
+// Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
+// As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
+function createWeatherEmbed(argumentsJoined, cityName) {
+    // In footer reference openweathermap.
+
+    // Account for forecast and celcius/Fahrenheit
+    var unit = argumentsJoined.includes("f") ||
+                argumentsJoined.includes("F") ||
+                argumentsJoined.includes("Fahrenheit") ? "imperial": "metric";
+    var unitSymbol = unit == "imperial" ? "°F": "°C";
+    var weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${openWeatherAPIKey}&units=${unit}`;
+    fetch(weatherURL)
+    .then(resp => resp.json())
+    .then(jsonResp => {
+
+        // Check rain greater than 0% and wind 0%
+        var message = retrieveWeatherResponses(cityName, jsonResp.main.temp +
+            unitSymbol, jsonResp.weather[0].description, jsonResp.main.temp_min +
+            unitSymbol,
+            jsonResp.main.temp_max, jsonResp.weather[0].icon);
+        if (jsonResp.weather.clouds > 0) {
+            message += `There's also a ${jsonResp.weather.clouds}% chance of ` +
+            `clouds.`
+        }
+        if (jsonResp.weather.rain > 0) {
+            message += `With also a ${jsonResp.weather.clouds}% chance of ` +
+            `showers.`
+        }
+    })
+    // var weatherEmbed = Discord.MessageEmbed()
+    //     .setColor(randomColourPicker())
+    //     .setTitle("")
+    //     .setTimestamp()
 }
 
 function retrieveConjunctive() {
@@ -278,6 +388,7 @@ function retrieveMentionUser(receivedMessage, arguments, index) {
     return isMentioned || isIdentified || isSelected;
 }
 
+// This function changes prefix.
 function updatePrefix(newPrefix) {
     // https://stackoverflow.com/a/21035861
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
