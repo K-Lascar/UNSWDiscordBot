@@ -230,15 +230,15 @@ function getWeatherEmoji(iconCode){
 function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
     icon) {
     return [
-        `Currently in ${cityName} it's ${temp}. The forecast for today is` +
-        `${weatherDesc} a low of ${tempMin} and ` + `high ${tempMax}.` +
-        getWeatherEmoji(icon),
+        `Currently in ${cityName} it's ${temp} ${getWeatherEmoji(icon)}. The ` +
+        `forecast for today is ${weatherDesc} a low of ${tempMin} and highs ` +
+        `of ${tempMax}.`,
         `The weather right now in ${cityName} is ${temp} it is expected to ` +
-        `have ${weatherDesc}. We can see as much as ${tempMax} and as low as ` +
-        `${tempMin}.` + getWeatherEmoji(icon),
-        `We're seeing ${getWeatherEmoji(icon)} heading into ${cityName}.` +
+        `have ${weatherDesc} ${getWeatherEmoji(icon)}. We can see as much as ` +
+        `${tempMax} and as low as ${tempMin}.`,
+        `We're seeing ${getWeatherEmoji(icon)} heading into ${cityName}. ` +
         `Currently we're having ${temp} and ${weatherDesc} it is expected to ` +
-        `rise to ${tempMax} and get low as ${tempMin}`
+        `rise to ${tempMax} and get low as ${tempMin}.`
     ][Math.floor(Math.random() * 3)];
 }
 
@@ -263,10 +263,13 @@ function createWeatherEmbed(argumentsJoined, cityName) {
             unitSymbol,
             jsonResp.main.temp_max, jsonResp.weather[0].icon);
         if (jsonResp.weather.clouds > 0) {
-
+            message += `There's also a ${jsonResp.weather.clouds}% chance of ` +
+            `clouds.`
         }
-        console.log("Currently we have a change of {} rain")
-
+        if (jsonResp.weather.rain > 0) {
+            message += `With also a ${jsonResp.weather.clouds}% chance of ` +
+            `showers.`
+        }
     })
     // var weatherEmbed = Discord.MessageEmbed()
     //     .setColor(randomColourPicker())
