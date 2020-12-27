@@ -180,7 +180,6 @@ function retrieveConfusedEmojis() {
     return ["😮", "🙁", "😕", "😧", "😢", "😞"][Math.floor(Math.random() * 6)]
 }
 
-
 function retrieveCity(message, argumentsJoined) {
     return new Promise(resolve => {
         const location = spawn("python", ["location.py", argumentsJoined]);
@@ -213,38 +212,60 @@ function getWeatherEmoji(iconCode){
         "02n": "⛅",
         "03d": "☁",     // Scattered Clouds
         "03n": "☁",
-        "04d": "🌃",    // Broken Clouds
-        "04n": "🌃",
-        "09d": "🌧",
+        "04d": "☁☁",    // Broken Clouds
+        "04n": "☁☁",
+        "09d": "🌧",     // Shower Rain
         "09n": "🌧",
-        "10d": "🌦",
+        "10d": "🌦",     // Rain
         "10n": "🌦",
-        "11d": "🌩",
+        "11d": "🌩",     // Thunderstorm
         "11n": "🌩",
-        "13d": "🌨",
+        "13d": "🌨",     // Snow
         "13n": "🌨",
-        "50d": "🌫",
+        "50d": "🌫",     // Mist
         "50n": "🌫"
     }[iconCode];
 }
 
+function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
+    icon) {
+    return [
+        `Currently in ${cityName} it's ${temp}. The forecast for today is` +
+        `${weatherDesc} a low of ${tempMin} and ` + `high ${tempMax}.` +
+        getWeatherEmoji(icon),
+        `The weather right now in ${cityName} is ${temp} it is expected to ` +
+        `have ${weatherDesc}. We can see as much as ${tempMax} and as low as ` +
+        `${tempMin}.` + getWeatherEmoji(icon),
+        `We're seeing ${getWeatherEmoji(icon)} heading into ${cityName}.` +
+        `Currently we're having ${temp} and ${weatherDesc} it is expected to ` +
+        `rise to ${tempMax} and get low as ${tempMin}`
+    ][Math.floor(Math.random() * 3)];
+}
+
+// Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
+// As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
 function createWeatherEmbed(argumentsJoined, cityName) {
     // In footer reference openweathermap.
 
     // Account for forecast and celcius/Fahrenheit
-    var units = argumentsJoined.includes("f") ||
+    var unit = argumentsJoined.includes("f") ||
                 argumentsJoined.includes("F") ||
                 argumentsJoined.includes("Fahrenheit") ? "imperial": "metric";
-    var weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${openWeatherAPIKey}&units=${units}`;
+    var unitSymbol = unit == "imperial" ? "°F": "°C";
+    var weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${openWeatherAPIKey}&units=${unit}`;
     fetch(weatherURL)
     .then(resp => resp.json())
-    .then(json => {
-        console.log(json.weather);
-        var currentTemp = weather.main["temp"];
-        console.log(json.weather[0]["description"]);
-        console.log(json.weather[0]["icon"]);
-        console
+    .then(jsonResp => {
 
+        // Check rain greater than 0% and wind 0%
+        var message = retrieveWeatherResponses(cityName, jsonResp.main.temp +
+            unitSymbol, jsonResp.weather[0].description, jsonResp.main.temp_min +
+            unitSymbol,
+            jsonResp.main.temp_max, jsonResp.weather[0].icon);
+        if (jsonResp.weather.clouds > 0) {
+
+        }
+        console.log("Currently we have a change of {} rain")
 
     })
     // var weatherEmbed = Discord.MessageEmbed()
