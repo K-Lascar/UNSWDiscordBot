@@ -2,7 +2,7 @@
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
-        ownerKey, openWeatherAPIKey} = require("./config.json");
+        ownerKey, openWeatherAPIKey, mapboxPublicKey} = require("./config.json");
 const client_presence = require('discord-rich-presence')(ownerKey);
 const fetch = require("node-fetch");
 const fs = require("fs");
@@ -157,7 +157,7 @@ function processCommand(receivedMessage) {
         }
     } else if (primaryCommand == "test") {
         authorId = receivedMessage.author.id
-        receivedMessage.channel.send(`Hello <@${authorId}>`)
+        receivedMessage.channel.send(`Hello <@${authorId}> nice to meet you!`)
     } else if (primaryCommand == "weather") {
         //https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
         // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
@@ -165,14 +165,17 @@ function processCommand(receivedMessage) {
             // let weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${openWeatherAPIKey}`
             embedWeather(receivedMessage, arguments);
         }
+        // https://www.youtube.com/watch?v=AFmebufTce4
+    } else if (primaryCommand == "directions") {
+
     } else {
 
     }
 }
 
 
-async function embedWeather(message, arguments) {
-    var response = await retrieveCity(message, arguments.join());
+function embedWeather(message, arguments) {
+    retrieveCity(message, arguments.join());
 
 }
 
@@ -180,26 +183,28 @@ function retrieveConfusedEmojis() {
     return ["😮", "🙁", "😕", "😧", "😢", "😞"][Math.floor(Math.random() * 6)]
 }
 
-function retrieveCity(message, argumentsJoined) {
-    return new Promise(resolve => {
-        const location = spawn("python", ["location.py", argumentsJoined]);
-        location.stdout.on("data", (data) => {
-            var result = data.toString();
+function retrieveCity(receivedMessage, argumentsJoined) {
+    const location = spawn("python", [path.join(process.cwd(),
+        path.join("locations", "location.py")), argumentsJoined]);
+    location.stdout.on("data", (data) => {
+        var result = data.toString();
 
-            if (result === "[]") {
-                message.reply("I'm sorry that city doesn't exist! " +
-                retrieveConfusedEmojis());
-            } else {
-                createWeatherEmbed(argumentsJoined, result);
-            }
-        })
-        location.on("close", (code) => {
-            console.log(`Closed All Stdio with code: ${code}`);
-        })
-        location.on("exit", (code) => {
-            console.log(`Exited Child Process with code: ${code}`);
-            resolve(1);
-        })
+        // Read this.
+        // https://www.guru99.com/difference-equality-strict-operator-javascript.html
+        if (result === "[]") {
+            receivedMessage.reply("I'm sorry that city doesn't exist! " +
+            retrieveConfusedEmojis());
+        } else {
+            createWeatherEmbed(argumentsJoined, receivedMessage, result);
+        }
+    })
+
+    location.on("close", (code) => {
+        console.log(`Closed All Stdio with code: ${code}`);
+    })
+
+    location.on("exit", (code) => {
+        console.log(`Exited Child Process with code: ${code}`);
     })
 }
 
@@ -244,7 +249,7 @@ function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
 
 // Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
 // As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
-function createWeatherEmbed(argumentsJoined, cityName) {
+function createWeatherEmbed(argumentsJoined, receivedMessage, cityName) {
     // In footer reference openweathermap.
 
     // Account for forecast and celcius/Fahrenheit
@@ -257,11 +262,12 @@ function createWeatherEmbed(argumentsJoined, cityName) {
     .then(resp => resp.json())
     .then(jsonResp => {
 
-        // Check rain greater than 0% and wind 0%
-        var message = retrieveWeatherResponses(cityName, jsonResp.main.temp +
-            unitSymbol, jsonResp.weather[0].description, jsonResp.main.temp_min +
-            unitSymbol,
-            jsonResp.main.temp_max, jsonResp.weather[0].icon);
+        var message = retrieveWeatherResponses(cityName, ~~jsonResp.main.temp +
+            unitSymbol, jsonResp.weather[0].description,
+            ~~jsonResp.main.temp_min + unitSymbol, ~~jsonResp.main.temp_max,
+            jsonResp.weather[0].icon);
+
+        // Check rain greater than 0% and wind greater than 0%
         if (jsonResp.weather.clouds > 0) {
             message += `There's also a ${jsonResp.weather.clouds}% chance of ` +
             `clouds.`
@@ -270,11 +276,20 @@ function createWeatherEmbed(argumentsJoined, cityName) {
             message += `With also a ${jsonResp.weather.clouds}% chance of ` +
             `showers.`
         }
-    })
-    // var weatherEmbed = Discord.MessageEmbed()
-    //     .setColor(randomColourPicker())
-    //     .setTitle("")
-    //     .setTimestamp()
+
+        // Need to functionalise!
+        var mapboxRequestURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${jsonResp.coord.lon},${jsonResp.coord.lat},10,0/400x300?access_token=${mapboxPublicKey}`
+
+        var weatherEmbed = new Discord.MessageEmbed()
+            .setColor(randomColourPicker())
+            .setTitle(`Weather for ${cityName}`)
+            .setDescription(message)
+            .setImage(mapboxRequestURL)
+            .setFooter("Data Provided by: OpenWeatherMap & MapBox")
+
+        receivedMessage.channel.send(weatherEmbed);
+    }).catch(err => console.log(err));
+
 }
 
 function retrieveConjunctive() {
