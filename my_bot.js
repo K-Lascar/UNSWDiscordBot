@@ -181,7 +181,7 @@ function retrieveConfusedEmojis() {
 }
 
 function retrieveCity(receivedMessage, argumentsJoined) {
-    const location = spawn("python", [path.join(process.cwd(),
+    var location = spawn("python", [path.join(process.cwd(),
         path.join("locations", "location.py")), argumentsJoined]);
     location.stdout.on("data", (data) => {
         var result = data.toString();
@@ -313,6 +313,7 @@ function getAddressCoords(message, address) {
         console.log(err);
     });
 }
+
 // UNSW COORDS = LAT: -33.918488, LONG: 151.227858
 // 33.8174° S, 151.0017° E
 function processDirections(addressCoords) {
@@ -320,6 +321,20 @@ function processDirections(addressCoords) {
     var directionCoords = `${addressCoords};${unswCoords}`;
     var encodedCoords = encodeURI(directionCoords);
     var directionsURL = `https://api.mapbox.com/directions/v5/mapbox/driving/${encodedCoords}?alternatives=false&geometries=geojson&steps=false&access_token=${mapboxPublicKey}`
+    fetch(directionsURL)
+    .then(resp => resp.json())
+    .then(jsonResp => {
+        var pathCoords = jsonResp.routes[0].geometry.coordinates;
+
+        // https://github.com/mapbox/path-gradients
+        var gradients = spawn("node", [path.join(process.cwd(), path.join(
+            "path-gradients", "main.js"
+        ))], JSON.stringify(pathCoords));
+        gradients.stdout.on("data", (data) => {
+            var result = data.toString();
+            
+        })
+    });
 }
 
 
