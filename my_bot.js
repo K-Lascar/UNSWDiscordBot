@@ -3,7 +3,7 @@ const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
         ownerKey, openWeatherAPIKey, mapboxPublicKey} = require("./config.json");
-const client_presence = require('discord-rich-presence')(ownerKey);
+// const client_presence = require('discord-rich-presence')(ownerKey);
 const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
@@ -46,16 +46,16 @@ client.on("ready", () =>{
 
 
 // Interesting implementation add ability to change status, such that it moves (has motion).
-client_presence.updatePresence({
-    state: 'MacOS Mojave',
-    // details: '🐍',
-    startTimestamp: Date.now(),
-    largeImageKey: 'virtualbox',
-    largeText: "virtualbox",
-    smallImageKey: 'mojave',
-    smallText: "mojave",
-    instance: true,
-});
+// client_presence.updatePresence({
+//     state: 'MacOS Mojave',
+//     // details: '🐍',
+//     startTimestamp: Date.now(),
+//     largeImageKey: 'virtualbox',
+//     largeText: "virtualbox",
+//     smallImageKey: 'mojave',
+//     smallText: "mojave",
+//     instance: true,
+// });
 
 client.on("message", (receivedMessage) => {
 
@@ -102,11 +102,12 @@ function randomColourPicker() {
 }
 
 function processCommand(receivedMessage) {
-    var fullCommand = receivedMessage.content.substr(prefix.length + 1)
-    // Regex / +/ if many spaces provided
-    var splitCommand = fullCommand.split(/ +/)
-    var primaryCommand = splitCommand[0]
-    var arguments = splitCommand.slice(1)
+    var fullCommand = receivedMessage.content.substr(prefix.length + 1);
+
+    // Regex / +/ if many spaces provided, it'll remove them.
+    var splitCommand = fullCommand.split(/ +/);
+    var primaryCommand = splitCommand[0];
+    var arguments = splitCommand.slice(1);
     console.log(receivedMessage.content)
     console.log("Arguments: " + arguments)
     console.log("SplitCommand: " + splitCommand)
@@ -156,31 +157,27 @@ function processCommand(receivedMessage) {
             permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
         }
     } else if (primaryCommand == "test") {
-        authorId = receivedMessage.author.id
+        var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`Hello <@${authorId}> nice to meet you!`)
     } else if (primaryCommand == "weather") {
         //https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
         // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
         if (arguments.length >= 1) {
             // let weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${openWeatherAPIKey}`
-            embedWeather(receivedMessage, arguments);
+            retrieveCity(message, arguments.join());
         }
         // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
-
+        getAddressCoords(receivedMessage, arguments.join());
     } else {
 
     }
 }
 
-
-function embedWeather(message, arguments) {
-    retrieveCity(message, arguments.join());
-
-}
-
+// Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
 function retrieveConfusedEmojis() {
-    return ["😮", "🙁", "😕", "😧", "😢", "😞"][Math.floor(Math.random() * 6)]
+    return ["😮", "🙁", "😕", "😧", "😢", "😞", "🤔",
+            "🤨"][Math.floor(Math.random() * 8)]
 }
 
 function retrieveCity(receivedMessage, argumentsJoined) {
@@ -194,9 +191,9 @@ function retrieveCity(receivedMessage, argumentsJoined) {
         if (result === "[]") {
             receivedMessage.reply("I'm sorry that city doesn't exist! " +
             retrieveConfusedEmojis());
-        } else {
-            createWeatherEmbed(argumentsJoined, receivedMessage, result);
+            return;
         }
+        getWeather(argumentsJoined, receivedMessage, result);
     })
 
     location.on("close", (code) => {
@@ -207,6 +204,7 @@ function retrieveCity(receivedMessage, argumentsJoined) {
         console.log(`Exited Child Process with code: ${code}`);
     })
 }
+
 
 function getWeatherEmoji(iconCode){
     // Object based on https://openweathermap.org/weather-conditions
@@ -236,36 +234,36 @@ function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
     icon) {
     return [
         `Currently in ${cityName} it's ${temp} ${getWeatherEmoji(icon)}. The ` +
-        `forecast for today is ${weatherDesc} a low of ${tempMin} and highs ` +
-        `of ${tempMax}.`,
+        `forecast for today is ${weatherDesc}, with a low of ${tempMin} and ` +
+        `highs of ${tempMax}.`,
         `The weather right now in ${cityName} is ${temp} it is expected to ` +
         `have ${weatherDesc} ${getWeatherEmoji(icon)}. We can see as much as ` +
         `${tempMax} and as low as ${tempMin}.`,
         `We're seeing ${getWeatherEmoji(icon)} heading into ${cityName}. ` +
-        `Currently we're having ${temp} and ${weatherDesc} it is expected to ` +
-        `rise to ${tempMax} and get low as ${tempMin}.`
+        `Currently it's ${temp} and ${weatherDesc}. It is expected to ` +
+        `rise to ${tempMax} and get as low as ${tempMin}.`
     ][Math.floor(Math.random() * 3)];
 }
 
 // Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
 // As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
-function createWeatherEmbed(argumentsJoined, receivedMessage, cityName) {
-    // In footer reference openweathermap.
+function getWeather(argumentsJoined, receivedMessage, cityName) {
+    // In footer reference OpenWeatherMap and MapBox.
 
-    // Account for forecast and celcius/Fahrenheit
+    // Account for forecast and Celsius/Fahrenheit
     var unit = argumentsJoined.includes("f") ||
-                argumentsJoined.includes("F") ||
-                argumentsJoined.includes("Fahrenheit") ? "imperial": "metric";
+               argumentsJoined.includes("F") ||
+               argumentsJoined.includes("Fahrenheit") ? "imperial": "metric";
     var unitSymbol = unit == "imperial" ? "°F": "°C";
     var weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${openWeatherAPIKey}&units=${unit}`;
     fetch(weatherURL)
     .then(resp => resp.json())
     .then(jsonResp => {
-
+        console.log(jsonResp)
         var message = retrieveWeatherResponses(cityName, ~~jsonResp.main.temp +
             unitSymbol, jsonResp.weather[0].description,
-            ~~jsonResp.main.temp_min + unitSymbol, ~~jsonResp.main.temp_max,
-            jsonResp.weather[0].icon);
+            ~~jsonResp.main.temp_max + unitSymbol, ~~jsonResp.main.temp_min +
+            unitSymbol, jsonResp.weather[0].icon);
 
         // Check rain greater than 0% and wind greater than 0%
         if (jsonResp.weather.clouds > 0) {
@@ -277,20 +275,55 @@ function createWeatherEmbed(argumentsJoined, receivedMessage, cityName) {
             `showers.`
         }
 
-        // Need to functionalise!
-        var mapboxRequestURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${jsonResp.coord.lon},${jsonResp.coord.lat},10,0/400x300?access_token=${mapboxPublicKey}`
-
-        var weatherEmbed = new Discord.MessageEmbed()
-            .setColor(randomColourPicker())
-            .setTitle(`Weather for ${cityName}`)
-            .setDescription(message)
-            .setImage(mapboxRequestURL)
-            .setFooter("Data Provided by: OpenWeatherMap & MapBox")
-
+        var weatherEmbed = createWeatherEmbed(cityName, jsonResp.coord.lon,
+            jsonResp.coord.lat, message);
         receivedMessage.channel.send(weatherEmbed);
     }).catch(err => console.log(err));
 
 }
+
+function getAddressCoords(message, address) {
+    var addressEncoded = encodeURI(address);
+    // I don't know if this will break with Australian Territories where no path
+    // is available by land.
+    var geocodeURL = `https://api.mapbox.com/geocoding/v5/mapbox.places/${addressEncoded}.json?types=address&country=AU&limit=1&access_token=${mapboxPublicKey}`;
+    fetch(geocodeURL)
+    .then(resp => resp.json())
+    .then(jsonResp => {
+        console.log(jsonResp);
+        if (jsonResp.features === []) {
+            var authorId = receivedMessage.author.id;
+            var invalidResp = [
+                `Hey <@${authorId}> that address doesn't exist ` +
+                retrieveConfusedEmojis() + ".",
+                `We're sorry <@${authorId}> we could not find ${address} ` +
+                retrieveConfusedEmojis() + ".",
+                `Hi <@${authorId}> We weren't able to identify ${address} ` +
+                retrieveConfusedEmojis() + ".",
+                `Sorry to break it to you but ${address} doesn't seem to ` +
+                `exist maybe it'll exist one day but not today ` +
+                retrieveConfusedEmojis() + ".",
+            ][Math.floor(Math.random() * 4)];
+            message.channel.send(invalidResp);
+            return;
+        }
+        var addressCoords = jsonResp.features.center;
+        processDirections(addressCoords.join(","));
+    }).catch(err => {
+        console.log(err);
+    });
+}
+// UNSW COORDS = LAT: -33.918488, LONG: 151.227858
+// 33.8174° S, 151.0017° E
+function processDirections(addressCoords) {
+    var unswCoords = "151.217348,-33.957726"
+    var directionCoords = `${addressCoords};${unswCoords}`;
+    var encodedCoords = encodeURI(directionCoords);
+    var directionsURL = `https://api.mapbox.com/directions/v5/mapbox/driving/${encodedCoords}?alternatives=false&geometries=geojson&steps=false&access_token=${mapboxPublicKey}`
+}
+
+
+// https://api.mapbox.com/geocoding/v5/mapbox.places/High%20Street%20Kensington.json?types=address&country=AU&limit=1&access_token=${mapboxPublicKey}
 
 function retrieveConjunctive() {
     return [
@@ -303,9 +336,8 @@ function retrieveConjunctive() {
     ]
 }
 
-
+// https://discord.com/developers/docs/topics/permissions
 function retrievePermissions(permission) {
-    // https://discord.com/developers/docs/topics/permissions
     var permissions = [
         "CREATE INSTANT INVITE",
         "KICK MEMBERS",
@@ -348,32 +380,47 @@ function checkLinking(argument) {
 // function chatWith
 function createErrorEmbed(arguments) {
     var errorEmbed = {
-        color: 0xff4500,    // Color orange red.
+        // Color orange red.
+        color: 0xff4500,
         title: `❌ Invalid User ${arguments.join(" ")}`,
     }
     return errorEmbed;
 }
 
-function createWhoIsEmbed(member, user, userDetails) {
+function createWeatherEmbed(cityName, longitude, latitude, message) {
+    var mapboxRequestURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${longitude},${latitude},10,0/400x300?access_token=${mapboxPublicKey}`
+
+    var weatherEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(`Weather for ${cityName}`)
+        .setDescription(message)
+        .setImage(mapboxRequestURL)
+        .setFooter("Data Provided by: OpenWeatherMap & MapBox")
+    return weatherEmbed;
+}
+
+function createWhoIsEmbed(memberObj, userObj, userDetails) {
     var date = new Date();
 
     // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
     // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
     // https://stackoverflow.com/a/50374666/14151099
+
+    // https://www.xspdf.com/resolution/57184174.html
     var messageEmbed = {
         color: randomColourPicker(),
         title: "User Profile",
         author: {
             name: `${userDetails.tag}`,
-            icon_url: `${user.avatarURL()}`,
+            icon_url: `${userObj.avatarURL()}`,
         },
         thumbnail: {
-            url: `${user.avatarURL()}`
+            url: `${userObj.avatarURL()}`
         },
         fields: [
             {
                 name: "**Joined Date**",
-                value: `${member.joinedAt.toDateString()}`,
+                value: `${memberObj.joinedAt.toDateString()}`,
                 inline: true,
             },
             {
@@ -389,10 +436,11 @@ function createWhoIsEmbed(member, user, userDetails) {
         ],
         description: `<@!${userDetails.id}>`,
         footer: {
-            text: `ID: ${userDetails.id} \n` +
+            text: `ID: ${userDetails.id} \u200b` +
             `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
         }
     }
+
     return messageEmbed;
 }
 
@@ -437,7 +485,8 @@ function play(arguments, receivedMessage) {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/378993812309016577/771666532551622656/long_endless_stairs.webm")
         }
     } else {
-        receivedMessage.channel.send("Invalid Video. ")
+        var authorId = receivedMessage.author.id;
+        receivedMessage.channel.send(`Oh no! We could not find that video <@${authorId}>.`)
     }
 }
 
