@@ -1,3 +1,0 @@
-[submodule "path-gradients"]
-	path = path-gradients
-	url = https://github.com/mapbox/path-gradients.git
