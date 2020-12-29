@@ -168,7 +168,7 @@ function processCommand(receivedMessage) {
         }
         // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
-        getAddressCoords(receivedMessage, arguments.join());
+        getAddressCoords(receivedMessage, arguments.join(" "));
     } else {
 
     }
@@ -259,7 +259,6 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
     fetch(weatherURL)
     .then(resp => resp.json())
     .then(jsonResp => {
-        console.log(jsonResp)
         var message = retrieveWeatherResponses(cityName, ~~jsonResp.main.temp +
             unitSymbol, jsonResp.weather[0].description,
             ~~jsonResp.main.temp_max + unitSymbol, ~~jsonResp.main.temp_min +
@@ -282,7 +281,7 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
 
 }
 
-function getAddressCoords(message, address) {
+function getAddressCoords(receivedMessage, address) {
     var addressEncoded = encodeURI(address);
     // I don't know if this will break with Australian Territories where no path
     // is available by land.
@@ -290,7 +289,6 @@ function getAddressCoords(message, address) {
     fetch(geocodeURL)
     .then(resp => resp.json())
     .then(jsonResp => {
-        console.log(jsonResp);
         if (jsonResp.features === []) {
             var authorId = receivedMessage.author.id;
             var invalidResp = [
@@ -304,11 +302,12 @@ function getAddressCoords(message, address) {
                 `exist maybe it'll exist one day but not today ` +
                 retrieveConfusedEmojis() + ".",
             ][Math.floor(Math.random() * 4)];
-            message.channel.send(invalidResp);
+            receivedMessage.channel.send(invalidResp);
             return;
         }
-        var addressCoords = jsonResp.features.center;
-        processDirections(addressCoords.join(","));
+        var addressCoords = jsonResp.features[0].center;
+        var fullAddress = jsonResp.features[0].place_name;
+        processDirections(addressCoords.join(","), fullAddress, receivedMessage);
     }).catch(err => {
         console.log(err);
     });
@@ -316,7 +315,7 @@ function getAddressCoords(message, address) {
 
 // UNSW COORDS = LAT: -33.918488, LONG: 151.227858
 // 33.8174° S, 151.0017° E
-function processDirections(addressCoords) {
+function processDirections(addressCoords, fullAddress, receivedMessage) {
     var unswCoords = "151.217348,-33.957726"
     var directionCoords = `${addressCoords};${unswCoords}`;
     var encodedCoords = encodeURI(directionCoords);
@@ -329,17 +328,35 @@ function processDirections(addressCoords) {
         // https://github.com/mapbox/path-gradients
         var gradients = spawn("node", [path.join(process.cwd(), path.join(
             "path-gradients", "main.js"
-        ))], JSON.stringify(pathCoords));
+        )), JSON.stringify(pathCoords)]);
         gradients.stdout.on("data", (data) => {
-            var result = data.toString();
-            
+            var polylineString = data.toString();
+            var locationsEmbed = createLocationsEmbed(fullAddress, polylineString);
+            receivedMessage.channel.send(locationsEmbed);
         })
-    });
+
+        gradients.on("close", (code) => {
+            console.log(`Closed All Stdio with code: ${code}`);
+        })
+        gradients.on("exit", (code) => {
+            console.log(`Exited Child Process with code: ${code}`);
+        })
+    }).catch(err => console.log(err));
 }
 
+// TO REMOVE
+function createLocationsEmbed(fullAddress, polylineString) {
+    polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
+    var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
+    var locationsEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(`From ${fullAddress} to UNSW!`)
+        .setImage(imageURL)
+        .setFooter("Data Provided by: © 2020 Mapbox, Inc")
+    return locationsEmbed;
+}
 
 // https://api.mapbox.com/geocoding/v5/mapbox.places/High%20Street%20Kensington.json?types=address&country=AU&limit=1&access_token=${mapboxPublicKey}
-
 function retrieveConjunctive() {
     return [
         "and",
@@ -410,7 +427,7 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
         .setTitle(`Weather for ${cityName}`)
         .setDescription(message)
         .setImage(mapboxRequestURL)
-        .setFooter("Data Provided by: OpenWeatherMap & MapBox")
+        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc")
     return weatherEmbed;
 }
 
