@@ -1,4 +1,3 @@
-// const { timeStamp, Console } = require("console");
 const Discord = require("discord.js")
 const client = new Discord.Client()
 const {prefix, token, clientID, generalChannelID, botID,
@@ -58,7 +57,6 @@ client.on("ready", () =>{
 // });
 
 client.on("message", (receivedMessage) => {
-
 
     if (receivedMessage.author.bot) {
         return
@@ -136,7 +134,7 @@ function processCommand(receivedMessage) {
         }
 
         receivedMessage.channel.send({embed: embed});
-    } else if (primaryCommand == "purge") {
+    } else if (primaryCommand == "love") {
 
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
@@ -168,7 +166,13 @@ function processCommand(receivedMessage) {
         }
         // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
-        getAddressCoords(receivedMessage, arguments.join(" "));
+        if (arguments[0] == "from") {
+            arguments = arguments.slice(1);
+            getAddressCoords(receivedMessage, arguments.join(" "));
+        } else {
+            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+            `please specify **${getCurrentPrefix()} directions from <Address>**`)
+        }
     } else {
 
     }
@@ -256,6 +260,7 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
                argumentsJoined.includes("Fahrenheit") ? "imperial": "metric";
     var unitSymbol = unit == "imperial" ? "°F": "°C";
     var weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${openWeatherAPIKey}&units=${unit}`;
+
     fetch(weatherURL)
     .then(resp => resp.json())
     .then(jsonResp => {
@@ -344,8 +349,8 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
     }).catch(err => console.log(err));
 }
 
-// TO REMOVE
 function createLocationsEmbed(fullAddress, polylineString) {
+    // https://stackoverflow.com/a/10805198
     polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
     var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
     var locationsEmbed = new Discord.MessageEmbed()
@@ -472,7 +477,6 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
             `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
         }
     }
-
     return messageEmbed;
 }
 
@@ -492,9 +496,10 @@ function updatePrefix(newPrefix) {
     fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
 }
 
-function getCurrentPrefix(receivedMessage) {
+function getCurrentPrefix() {
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
-    receivedMessage.channel.send(`The current prefix is ${jsonFile["prefix"]}`)
+    return jsonFile["prefix"];
+    // receivedMessage.channel.send(`The current prefix is ${jsonFile["prefix"]}`)
 }
 
 function helpCommand(arguments, receivedMessage) {
@@ -523,4 +528,3 @@ function play(arguments, receivedMessage) {
 }
 
 client.login(token)
-
