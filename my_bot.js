@@ -176,23 +176,28 @@ function processCommand(receivedMessage) {
             `please specify **${getCurrentPrefix()} directions from <Address>**`)
         }
     } else if (primaryCommand == "salary") {
-        var jobSliced = arguments.slice(1);
-        retrieveSalaryData(receivedMessage, jobSliced.join("-"));
+        retrieveSalaryData(receivedMessage, arguments);
     }
 }
 
 // Please enter a valid job title.
 function retrieveSalaryData(receivedMessage, job) {
-    var encodedJob = encodeURI(job);
-    // This may be subject to change, as indeed may break this functionality all together.
+    var jobFormatted = job.join("-");
+    var encodedJob = encodeURI(jobFormatted);
 
+    // https://stackoverflow.com/a/42755730/14151099
+    var jobString = job.map(function(word) {
+        return word[0].toUpperCase() + word.substr(1)
+    }).join(" ");
+
+    // This may be subject to change, as indeed may break this functionality all together.
     var indeedURL = `https://au.indeed.com/career/${encodedJob}/salaries`
     // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
     fetch(indeedURL)
     .then(function(resp) {
         if (resp.status != 200) {
-            receivedMessage.channel.send(`Sorry we could not find that ${job} `+
-            `title ${retrieveConfusedEmojis()}.`);
+            receivedMessage.channel.send(`Sorry we could not find that ` +
+            `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
             return;
         }
         return resp.text()
@@ -200,8 +205,8 @@ function retrieveSalaryData(receivedMessage, job) {
     .then(respText => {
         if (respText) {
             var salary = JSON.stringify(respText).split(" is ")[1].split(" per year in Australia.")[0]
-            receivedMessage.channel.send(`According to **Indeed.com.au** ` +
-            `figures the average base salary for ${job.split("-").join(" ")} ` +
+            receivedMessage.channel.send(`According to **Indeed**, the ` +
+            `figures suggest the average base salary for ${jobString} ` +
             `is **${salary}**.`)
         }
     })
