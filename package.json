@@ -1,0 +1,21 @@
+{
+  "dependencies": {
+    "@discordjs/collection": "^0.1.6",
+    "@discordjs/form-data": "^3.0.1",
+    "abort-controller": "^3.0.0",
+    "async-limiter": "^2.0.0",
+    "asynckit": "^0.4.0",
+    "combined-stream": "^1.0.8",
+    "delayed-stream": "^1.0.0",
+    "discord-rich-presence": "0.0.8",
+    "discord.js": "^12.5.1",
+    "event-target-shim": "^5.0.1",
+    "mime-db": "^1.45.0",
+    "mime-types": "^2.1.27",
+    "node-fetch": "^2.6.1",
+    "prism-media": "^1.2.3",
+    "setimmediate": "^1.0.5",
+    "tweetnacl": "^1.0.3",
+    "ws": "^7.4.2"
+  }
+}
