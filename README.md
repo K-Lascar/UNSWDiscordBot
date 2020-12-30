@@ -2,6 +2,10 @@
 
 This program is a DiscordBot, that I'm currently working on in order to get more experience using javascript and interacting with discord!
 
+If you would like to use a discord bot that retrieves the handbook details for UNSW, please use this great bot designed by both [Office-Stapler](https://github.com/Office-Stapler) and [V-Wong](https://github.com/V-Wong) here: https://github.com/Office-Stapler/handbook.
+
+
+
 After planning what to do with this bot, I've decided we should have the following implementations:
 
 ## IMPLEMENTATION
