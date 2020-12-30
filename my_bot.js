@@ -7,6 +7,7 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const {spawn} = require("child_process");
+const { resolve } = require("path");
 
 // USE FOR PULLING https://stackoverflow.com/a/9695141/14151099
 
@@ -161,24 +162,49 @@ function processCommand(receivedMessage) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`Hello <@${authorId}> nice to meet you!`)
     } else if (primaryCommand == "weather") {
-        //https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
-        // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
+
         if (arguments.length >= 1) {
-            // let weatherURL = `https://api.openweathermap.org/data/2.5/weather?q=London&appid=${openWeatherAPIKey}`
             retrieveCity(message, arguments.join());
         }
         // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
         if (arguments[0] == "from") {
-            arguments = arguments.slice(1);
-            getAddressCoords(receivedMessage, arguments.join(" "));
+            var addressSliced = arguments.slice(1);
+            getAddressCoords(receivedMessage, addressSliced.join(" "));
         } else {
             receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
             `please specify **${getCurrentPrefix()} directions from <Address>**`)
         }
-    } else {
-
+    } else if (primaryCommand == "salary") {
+        var jobSliced = arguments.slice(1);
+        retrieveSalaryData(receivedMessage, jobSliced.join("-"));
     }
+}
+
+// Please enter a valid job title.
+function retrieveSalaryData(receivedMessage, job) {
+    var encodedJob = encodeURI(job);
+    // This may be subject to change, as indeed may break this functionality all together.
+
+    var indeedURL = `https://au.indeed.com/career/${encodedJob}/salaries`
+    // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
+    fetch(indeedURL)
+    .then(function(resp) {
+        if (resp.status != 200) {
+            receivedMessage.channel.send(`Sorry we could not find that ${job} `+
+            `title ${retrieveConfusedEmojis()}.`);
+            return;
+        }
+        return resp.text()
+    })
+    .then(respText => {
+        if (respText) {
+            var salary = JSON.stringify(respText).split(" is ")[1].split(" per year in Australia.")[0]
+            receivedMessage.channel.send(`According to **Indeed.com.au** ` +
+            `figures the average base salary for ${job.split("-").join(" ")} ` +
+            `is **${salary}**.`)
+        }
+    })
 }
 
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
@@ -254,6 +280,9 @@ function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
 
 // Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
 // As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
+
+// https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
+// https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
 function getWeather(argumentsJoined, receivedMessage, cityName) {
     // In footer reference OpenWeatherMap and MapBox.
 
