@@ -412,6 +412,11 @@ function retrievePermissions(permission) {
         "MANAGE WEBHOOKS",
         "MANAGE EMOJIS"
     ];
+    var permissionFound = permissions.indexOf(permission);
+    if (permissionFound >= 0) {
+        return permissions[permissionFound];
+    }
+    return "";
 }
 
 function checkLinking(argument) {
@@ -493,9 +498,11 @@ function retrieveMentionUser(receivedMessage, arguments, index) {
 
 // This function changes prefix.
 function updatePrefix(newPrefix) {
+
     // https://stackoverflow.com/a/21035861
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
     jsonFile["prefix"] = newPrefix;
+
     // https://attacomsian.com/blog/javascript-pretty-print-json
     fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
 }
