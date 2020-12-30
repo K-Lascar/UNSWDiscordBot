@@ -525,9 +525,9 @@ function helpCommand(arguments, receivedMessage) {
 function play(arguments, receivedMessage) {
     if (arguments[0] == "movie") {
         if (arguments[1] == "joker") {
-            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/529500682781327396/730896880925671494/Joker_2019.webm")
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793723640495079444/Joker.webm")
         } else if (arguments[1] == "shrek") {
-            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/572172622973108225/572172751691972618/Shrek_VP9-60k_Opus-20300-1.webm")
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793722980340727838/Shrek.webm")
         }
     } else {
         var authorId = receivedMessage.author.id;
