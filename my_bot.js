@@ -8,6 +8,8 @@ const fs = require("fs");
 const path = require("path");
 const {spawn} = require("child_process");
 
+// USE FOR PULLING https://stackoverflow.com/a/9695141/14151099
+
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
 
@@ -306,7 +308,9 @@ function getAddressCoords(receivedMessage, address) {
                 `Sorry to break it to you but ${address} doesn't seem to ` +
                 `exist maybe it'll exist one day but not today ` +
                 retrieveConfusedEmojis() + ".",
-            ][Math.floor(Math.random() * 4)];
+                `I'm afraid we cannot find that particular address ` +
+                `${address} ` + retrieveConfusedEmojis() + "."
+            ][Math.floor(Math.random() * 5)];
             receivedMessage.channel.send(invalidResp);
             return;
         }
