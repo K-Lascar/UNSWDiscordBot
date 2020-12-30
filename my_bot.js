@@ -143,6 +143,7 @@ function processCommand(receivedMessage) {
                 primaryCommand == "modify" ||
                 primaryCommand == "set") &&
                 arguments.length >= 4) {
+        // Need to change this example and functionality.
         // botName change prefix as/with/to apples
         // botName update harold as/with/to mod
         var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
@@ -323,7 +324,6 @@ function getAddressCoords(receivedMessage, address) {
 }
 
 // UNSW COORDS = LAT: -33.918488, LONG: 151.227858
-// 33.8174° S, 151.0017° E
 function processDirections(addressCoords, fullAddress, receivedMessage) {
     var unswCoords = "151.217348,-33.957726"
     var directionCoords = `${addressCoords};${unswCoords}`;
@@ -503,7 +503,6 @@ function updatePrefix(newPrefix) {
 function getCurrentPrefix() {
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
     return jsonFile["prefix"];
-    // receivedMessage.channel.send(`The current prefix is ${jsonFile["prefix"]}`)
 }
 
 function helpCommand(arguments, receivedMessage) {
@@ -522,8 +521,6 @@ function play(arguments, receivedMessage) {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/529500682781327396/730896880925671494/Joker_2019.webm")
         } else if (arguments[1] == "shrek") {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/572172622973108225/572172751691972618/Shrek_VP9-60k_Opus-20300-1.webm")
-        } else if (arguments[1] == "mario") {
-            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/378993812309016577/771666532551622656/long_endless_stairs.webm")
         }
     } else {
         var authorId = receivedMessage.author.id;
