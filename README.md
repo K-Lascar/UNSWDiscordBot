@@ -57,4 +57,4 @@ After planning what to do with this bot, I've decided we should have the followi
    - Since discord channels may have multiple prefixes with their server bots (clashes), they may want to change what this bot's prefix is.
    
   
-Happy Coding Everyone!!! ​:happy:​
+Happy Coding Everyone!!! :smile: 
