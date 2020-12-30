@@ -1,0 +1,10 @@
+{
+    "prefix": "unsw",
+    "token": "BOT-TOKEN-HERE",
+    "botID": "BOT-ID-HERE",
+    "clientID": "CLIENT-ID-HERE",
+    "ownerKey": "OWNER-KEY-FOR-RPC",
+    "generalChannelID": "GEN-CHANNEL-ID-HERE",
+    "openWeatherAPIKey": "OPEN-WEATHER-API-KEY",
+    "mapboxPublicKey": "MAPBOX-PUBLIC-KEY"
+}
