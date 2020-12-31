@@ -6,9 +6,7 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const {spawn} = require("child_process");
-// const { default: WikiJS } = require("wikijs");
 const wiki = require("wikijs").default;
-// const { resolve } = require("path");
 
 // USE FOR PULLING https://stackoverflow.com/a/9695141/14151099
 
@@ -100,9 +98,9 @@ function processCommand(receivedMessage) {
         receivedMessage.channel.send(`<@${authorId}>`);
 
     } else if (primaryCommand == "help") {
-        helpCommand(arguments, receivedMessage);
+        helpCommand(receivedMessage, arguments);
     } else if (primaryCommand == "play") {
-        play(arguments, receivedMessage);
+        play(receivedMessage, arguments);
     } else if (primaryCommand == "whois") {
         processWhoIs(receivedMessage, arguments);
     } else if (receivedMessage.content.includes("love")) {
@@ -111,8 +109,7 @@ function processCommand(receivedMessage) {
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
                 primaryCommand == "modify" ||
-                primaryCommand == "set") &&
-                arguments.length >= 4) {
+                primaryCommand == "set")) {
         processUpdate(receivedMessage, arguments);
 
     } else if (primaryCommand == "test") {
@@ -154,16 +151,42 @@ function processUpdate(receivedMessage, arguments) {
     // Need to change this example and functionality.
     // botName change prefix as/with/to apples
     // botName update harold as/with/to mod
-    var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
-    if (arguments[1] == "prefix" && checkLinking(arguments[2])) {
-        console.log(receivedMessage.author);
-        updatePrefix(arguments[3]);
-        receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
-    } else if (userExists && checkLinking(arguments[2])) {
-        permissionSliced = arguments.slice(3).join(" ");
+    var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
+    if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
+
+        // First check if the prefix parsed is the same as the prefix given.
+        // Secondly check if they admin permissions to change it.
+        // If all else fails, send error message that user doesn't have
+        // permissions.
+        if (getCurrentPrefix() == arguments[2]) {
+            receivedMessage.channel.send(`The prefix is the same as the `+
+            `current prefix ` + retrieveConfusedEmojis());
+        } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
+            updatePrefix(arguments[2]);
+            receivedMessage.channel.send(`Prefix successfully updated to ` +
+            `**${arguments[2]}** :partying_face:`);
+
+        } else {
+            var authorId = receivedMessage.author.id;
+            receivedMessage.channel.send(`Sorry $<@${authorId}> you do not ` +
+            `have Admin permissions ` + retrieveConfusedEmojis());
+        }
+    } else if (userExists && checkLinking(arguments[1])) {
+        var permissionSliced = arguments.slice(2).join(" ");
+        permissionSliced = permissionSliced.split(new
+            RegExp(`${retrieveConjunctive().join("|")}`));
+
         // https://stackoverflow.com/a/46294003
         // https://reactgo.com/javascript-variable-regex/
-        permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
+
+        console.log(permissionSliced);
+        if (checkPermissionsExist(permissionSliced)) {
+
+        }
+        console.log(permissionSliced);
+    } else {
+        receivedMessage.channel.send(`What kind of prefix did you mean? ` +
+        retrieveConfusedEmojis())
     }
 }
 
@@ -203,7 +226,7 @@ function processWhoIs(receivedMessage, arguments) {
 
 function retrieveWikiResults(receivedMessage, query) {
     wiki()
-    .page('new years')
+    .page(query)
     .then(function(page) {
         console.log(page.raw);
 
@@ -211,6 +234,8 @@ function retrieveWikiResults(receivedMessage, query) {
         return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
     })
     .then(values => {
+        // Format of values is the return statement above:
+        // imageURL, summaryText, fullURL, title.
         createWikiEmbed(receivedMessage, values[0], values[1], values[2], values[3]);
     }) // Bruce Wayne
     .catch(err => console.log(err));
@@ -438,6 +463,8 @@ function createLocationsEmbed(fullAddress, polylineString) {
     // https://stackoverflow.com/a/10805198
     polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
     var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
+
+    // https://www.mapbox.com/about/press/brand-guidelines
     var locationsEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
         .setTitle(`From ${fullAddress} to UNSW!`)
@@ -457,16 +484,25 @@ function retrieveAntithesis() {
 function retrieveConjunctive() {
     return [
         "and",
+        "also",
         "as well as",
         "with",
-        "moreover",
         "in addition",
         "in addition to"
     ]
 }
 
+function checkPermissionsExist(permission) {
+    var permissions = retrievePermissions();
+    var permissionFound = permissions.indexOf(permission.toUpperCase());
+    if (permissionFound >= 0) {
+        return permissions[permissionFound];
+    }
+    return;
+}
+
 // https://discord.com/developers/docs/topics/permissions
-function retrievePermissions(permission) {
+function retrievePermissions() {
     var permissions = [
         "CREATE INSTANT INVITE",
         "KICK MEMBERS",
@@ -500,11 +536,7 @@ function retrievePermissions(permission) {
         "MANAGE WEBHOOKS",
         "MANAGE EMOJIS"
     ];
-    var permissionFound = permissions.indexOf(permission);
-    if (permissionFound >= 0) {
-        return permissions[permissionFound];
-    }
-    return;
+    return permissions;
 }
 
 function checkLinking(argument) {
@@ -600,7 +632,7 @@ function getCurrentPrefix() {
     return jsonFile["prefix"];
 }
 
-function helpCommand(arguments, receivedMessage) {
+function helpCommand(receivedMessage, arguments) {
     if (arguments.length == 0) {
         receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
         `${prefix}help [topic]`);
@@ -610,7 +642,7 @@ function helpCommand(arguments, receivedMessage) {
     }
 }
 
-function play(arguments, receivedMessage) {
+function play(receivedMessage, arguments) {
     if (arguments[0] == "movie") {
         if (arguments[1] == "joker") {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793723640495079444/Joker.webm")
