@@ -2,7 +2,7 @@
 
 This program is a DiscordBot, that I'm currently working on in order to get more experience using javascript and interacting with discord!
 
-If you would like to use a discord bot that retrieves the handbook details for UNSW, please use this great bot designed by both [Office-Stapler](https://github.com/Office-Stapler) and [V-Wong](https://github.com/V-Wong) here: https://github.com/Office-Stapler/handbook.
+If you would like to use a discord bot that retrieves the handbook details for UNSW, please use this bot designed by both [Office-Stapler](https://github.com/Office-Stapler) and [V-Wong](https://github.com/V-Wong) here: https://github.com/Office-Stapler/handbook.
 
 
 
@@ -19,10 +19,10 @@ After planning what to do with this bot, I've decided we should have the followi
 2. Play :white_check_mark:
 
    - If you would like to watch a movie or video that is already on discord, this bot has you covered!
-3. Whois (used similarly in the great dyno bot: <https://dyno.gg/>) :white_check_mark:
+3. Whois (used similarly in the Dyno Bot: <https://dyno.gg/>) :white_check_mark:
    - Retrieves the Joined Date
    - Retrieves the Creation Date
-4. Wikipedia (used similarly in the marveled alphabot system  <https://www.alphabotsystem.com/alpha-bot>):white_check_mark:
+4. Wikipedia (used similarly in the AlphaBot system  <https://www.alphabotsystem.com/alpha-bot>):white_check_mark:
 
    - If a user queries a particular term using this command, they will receive a summary of this page alongside the image of that Wikipedia page as an embed.
 5. Directions​ :white_check_mark:
@@ -48,10 +48,10 @@ After planning what to do with this bot, I've decided we should have the followi
        
    
    - The map is outputted as an embed.
-6. Weather (used similarly in the marveled alphabot system  <https://www.alphabotsystem.com/alpha-bot> and in the wonderful fb ai chatbot https://github.com/girliemac/fb-apiai-bot-demo/)  :white_check_mark:
+6. Weather (used similarly in the AlphaBot system  <https://www.alphabotsystem.com/alpha-bot> and in the Facebook AI chatbot https://github.com/girliemac/fb-apiai-bot-demo/)  :white_check_mark:
    - Currently the weather is retrieved from OpenWeatherMap.org <https://openweathermap.org/> and a map is retrieved from <https://www.mapbox.com/> for the provided city.
-     - Side note, thank you for both of these organisations for providing a service that is very useful and easy to use!
-   - If a user would like to retrieve weather details from a particular city they can do so.
+     - Side note, thank you to both of these organisations for providing a service that is very useful and easy to use!
+   - If a user would like to retrieve weather details from a particular city.
    - The current, forecasted max and min temperatures are retrieved.
    - A map of the location is outputted in a embed.
 
