@@ -130,7 +130,7 @@ function processCommand(receivedMessage) {
         retrieveSalaryData(receivedMessage, arguments);
 
     } else if (primaryCommand == "wiki" || primaryCommand == "wikipedia" ||
-               primaryCommand == "find" || primaryCommand == "salary") {
+               primaryCommand == "find" || primaryCommand == "wikime") {
         retrieveWikiResults(receivedMessage, arguments);
     } else {
         receivedMessage.channel.send(retrieveConfusedEmojis());
@@ -152,6 +152,7 @@ function processUpdate(receivedMessage, arguments) {
     // botName change prefix as/with/to apples
     // botName update harold as/with/to mod
     var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
+    console.log(userExists);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
         // First check if the prefix parsed is the same as the prefix given.
@@ -160,16 +161,16 @@ function processUpdate(receivedMessage, arguments) {
         // permissions.
         if (getCurrentPrefix() == arguments[2]) {
             receivedMessage.channel.send(`The prefix is the same as the `+
-            `current prefix ` + retrieveConfusedEmojis());
+            `current prefix. ` + retrieveConfusedEmojis());
         } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
             updatePrefix(arguments[2]);
             receivedMessage.channel.send(`Prefix successfully updated to ` +
-            `**${arguments[2]}** :partying_face:`);
+            `**${arguments[2]}** :partying_face:.`);
 
         } else {
             var authorId = receivedMessage.author.id;
-            receivedMessage.channel.send(`Sorry $<@${authorId}> you do not ` +
-            `have Admin permissions ` + retrieveConfusedEmojis());
+            receivedMessage.channel.send(`Sorry <@${authorId}> you do not ` +
+            `have Admin permissions. ` + retrieveConfusedEmojis());
         }
     } else if (userExists && checkLinking(arguments[1])) {
         var permissionSliced = arguments.slice(2).join(" ");
@@ -178,12 +179,40 @@ function processUpdate(receivedMessage, arguments) {
 
         // https://stackoverflow.com/a/46294003
         // https://reactgo.com/javascript-variable-regex/
-
-        console.log(permissionSliced);
-        if (checkPermissionsExist(permissionSliced)) {
-
-        }
-        console.log(permissionSliced);
+        // console.log(receivedMessage.author);
+        // console.log(permissionSliced);
+        permissionSliced.map(function(permission) {
+            var authorId = receivedMessage.author.id;
+            if (checkPermissionsExist(permission)) {
+                var author = receivedMessage.author;
+                var userDetails = client.users.cache.get(userExists.id);
+                var member = receivedMessage.guild.member(userDetails);
+                // console.log(receivedMessage.member);
+                // console.log(member);
+                permission = permission.split(" ").join("_");
+                if (member.hasPermission(permission)) {
+                    receivedMessage.channel.send(`${author} already has this `+
+                    `permission. ` + retrieveConfusedEmojis());
+                } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
+                    var channel = receivedMessage.channel;
+                    channel.updateOverwrite(userExists, {
+                        permission: true
+                    })
+                    .then(channel => console.log(channel))
+                    .catch(err => console.log(err));
+                } else {
+                    receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
+                    ` do not have Admin permissions. ` +
+                    retrieveConfusedEmojis());
+                }
+                // CHECK USER HAS PERMS IF SO STATE WHY CHANGE PERMS
+                // OTHERWISE CHECK USER CHANGING PERMS/RUNNING COMMAND HAS PERMISSIONS
+                console.log(permission);
+            } else {
+                receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
+                `permission doesn't exist, please provide a valid permission.`);
+            }
+        })
     } else {
         receivedMessage.channel.send(`What kind of prefix did you mean? ` +
         retrieveConfusedEmojis())
@@ -487,7 +516,6 @@ function retrieveConjunctive() {
         "also",
         "as well as",
         "with",
-        "in addition",
         "in addition to"
     ]
 }
