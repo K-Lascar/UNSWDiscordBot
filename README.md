@@ -24,7 +24,8 @@ After planning what to do with this bot, I've decided we should have the followi
    - Retrieves the Creation Date
 4. Wikipedia (used similarly in the AlphaBot system  <https://www.alphabotsystem.com/alpha-bot>):white_check_mark:
 
-   - If a user queries a particular term using this command, they will receive a summary of this page alongside the image of that Wikipedia page as an embed.
+   - If a user queries a particular term using this command, they will receive a summary of this page alongside the image of that Wikipedia page as an embed. 
+   - Made possible with the [WikiJS module] (https://dijs.github.io/wiki/index.html)
 5. Directions​ :white_check_mark:
    - If a user asks for directions from a particular address, an image of that
      address and UNSW path will be generated using MapBox Direction's API.
