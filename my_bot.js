@@ -1,35 +1,29 @@
 const Discord = require("discord.js")
 const client = new Discord.Client()
-const {prefix, token, clientID, generalChannelID, botID,
-        ownerKey, openWeatherAPIKey, mapboxPublicKey} = require("./config.json");
-// const client_presence = require('discord-rich-presence')(ownerKey);
+const {prefix, token, generalChannelID, openWeatherAPIKey,
+    mapboxPublicKey} = require("./config.json");
 const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const {spawn} = require("child_process");
-const { resolve } = require("path");
+const wiki = require("wikijs").default;
 
 // USE FOR PULLING https://stackoverflow.com/a/9695141/14151099
 
 // Can trigger multiple times (unlike .once)
 client.on("ready", () =>{
 
-    // var activityIndex = 0;
-    // // Updates Bot's activity every 30 minutes.
-    // setInterval(() => {
-    //     var activityList = ["📺Youtube📺", "📺outubeY📺", "📺utubeYo📺", "📺tubeYou📺",
-    //     "📺ubeYout📺", "📺beYoutu📺", "📺eYoutub📺"]
-    //     client.user.setActivity(activityList[activityIndex], {type:"WATCHING"});
-    //     activityIndex = (activityIndex + 1) % activityList.length;
-    // }, 30000);
-
     // Updates Bot's Avatar profile picture every 30 minutes.
     setInterval(() => {
-        client.user.setAvatar(path.join(".", retrieveAvatar()));
+        client.user.setAvatar(path.join(".", randomAvatarPicker()));
     }, 1800000);
+
     console.log("Connected as " + client.user.tag)
-    client.user.setActivity("Youtube", {type:"WATCHING"})
+
+    client.user.setActivity("📺Youtube📺", {type:"WATCHING"})
+
     // client.client_presence.updatePresence()
+
     client.guilds.cache.forEach((guilds) => {
         console.log(guilds.name)
         guilds.channels.cache.forEach((channels) => {
@@ -46,39 +40,18 @@ client.on("ready", () =>{
     }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
 })
 
-
-// Interesting implementation add ability to change status, such that it moves (has motion).
-// client_presence.updatePresence({
-//     state: 'MacOS Mojave',
-//     // details: '🐍',
-//     startTimestamp: Date.now(),
-//     largeImageKey: 'virtualbox',
-//     largeText: "virtualbox",
-//     smallImageKey: 'mojave',
-//     smallText: "mojave",
-//     instance: true,
-// });
-
 client.on("message", (receivedMessage) => {
 
     if (receivedMessage.author.bot) {
         return
     }
-    // receivedMessage.channel.send("Messaged received " + receivedMessage.author.toString() + ": " + receivedMessage.content)
-    // // receivedMessage.react("🤐")
-    // // receivedMessage.guild.emojis.cache.forEach(customEmoji => {
-    // //     console.log(`${customEmoji.name} ${customEmoji.id}`)
-    // //     receivedMessage.react(customEmoji)
-    // // })
-    // let customEmoji = receivedMessage.guild.emojis.cache.get(botID)
-    // receivedMessage.react(customEmoji)
-    // console.log(receivedMessage.content);
-    if (receivedMessage.content.startsWith(prefix + " ")) {
+
+    if (receivedMessage.content.startsWith(prefix)) {
         processCommand(receivedMessage);
     }
 })
 
-function retrieveAvatar() {
+function randomAvatarPicker() {
     return [
         path.join("assets", "avatars", "unsw_aqua_logo.png"),
         path.join("assets", "avatars", "unsw_aus_logo.png"),
@@ -102,6 +75,12 @@ function randomColourPicker() {
     0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)];
 }
 
+function randomHeartGen() {
+    return [
+        "❤", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍"
+    ][Math.floor(Math.random() * 9)];
+}
+
 function processCommand(receivedMessage) {
     var fullCommand = receivedMessage.content.substr(prefix.length + 1);
 
@@ -113,72 +92,155 @@ function processCommand(receivedMessage) {
     console.log("Arguments: " + arguments)
     console.log("SplitCommand: " + splitCommand)
     console.log("PrimaryCommand: " + primaryCommand)
+
     if (!splitCommand.length || !primaryCommand.length) {
-        receivedMessage.reply("no arguments were provided, please use command: "
-        + `**${prefix} help**`)
-        // receivedMessage.channel.send(exampleEmbed);
+        var authorId = receivedMessage.author.id;
+        receivedMessage.channel.send(`<@${authorId}>`);
+
     } else if (primaryCommand == "help") {
-        helpCommand(arguments, receivedMessage);
+        helpCommand(receivedMessage, arguments);
     } else if (primaryCommand == "play") {
-        play(arguments, receivedMessage);
+        play(receivedMessage, arguments);
     } else if (primaryCommand == "whois") {
-        // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
-        // Instead of select receivedMessage, we need to check if user specifies
-        // a substring (look for it, if doesn't exist don't search for it).
-        // Or they specify a id search for that.
-
-        var user = retrieveMentionUser(receivedMessage, arguments, 0);
-        if (user) {
-            var userDetails = client.users.cache.get(user.id);
-            var member = receivedMessage.guild.member(userDetails);
-            var embed = createWhoIsEmbed(member, user, userDetails);
-        } else {
-            var embed = createErrorEmbed(arguments);
-        }
-
-        receivedMessage.channel.send({embed: embed});
-    } else if (primaryCommand == "love") {
+        processWhoIs(receivedMessage, arguments);
+    } else if (receivedMessage.content.includes("love")) {
+        processLoveRequest(receivedMessage);
 
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
                 primaryCommand == "modify" ||
-                primaryCommand == "set") &&
-                arguments.length >= 4) {
-        // Need to change this example and functionality.
-        // botName change prefix as/with/to apples
-        // botName update harold as/with/to mod
-        var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
-        if (arguments[1] == "prefix" && checkLinking(arguments[2])) {
-            console.log(receivedMessage.author);
-            updatePrefix(arguments[3]);
-            receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
-        } else if (userExists && checkLinking(arguments[2])) {
-            permissionSliced = arguments.slice(3).join(" ");
-            // https://stackoverflow.com/a/46294003
-            // https://reactgo.com/javascript-variable-regex/
-            permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
-        }
+                primaryCommand == "set")) {
+        processUpdate(receivedMessage, arguments);
+
     } else if (primaryCommand == "test") {
         var authorId = receivedMessage.author.id;
-        receivedMessage.channel.send(`Hello <@${authorId}> nice to meet you!`)
+        receivedMessage.channel.send(`Hello <@${authorId}> nice to meet you!`);
+
     } else if (primaryCommand == "weather") {
 
+        // Add Else.
         if (arguments.length >= 1) {
             retrieveCity(message, arguments.join());
         }
-        // https://www.youtube.com/watch?v=AFmebufTce4
+
+    // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
-        if (arguments[0] == "from") {
-            var addressSliced = arguments.slice(1);
-            getAddressCoords(receivedMessage, addressSliced.join(" "));
-        } else {
-            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
-            `please specify **${getCurrentPrefix()} directions from <Address>**`)
-        }
+        processDirection(receivedMessage, arguments);
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
+
+    } else if (primaryCommand == "wiki" || primaryCommand == "wikipedia" ||
+               primaryCommand == "find" || primaryCommand == "salary") {
+        retrieveWikiResults(receivedMessage, arguments);
+    } else {
+        receivedMessage.channel.send(retrieveConfusedEmojis());
     }
 }
+
+function processDirection(receivedMessage, arguments) {
+    if (arguments[0] == "from") {
+        var addressSliced = arguments.slice(1);
+        getAddressCoords(receivedMessage, addressSliced.join(" "));
+    } else {
+        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+        `please specify **${getCurrentPrefix()} directions from <Address>**`)
+    }
+}
+
+function processUpdate(receivedMessage, arguments) {
+    // Need to change this example and functionality.
+    // botName change prefix as/with/to apples
+    // botName update harold as/with/to mod
+    var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
+    if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
+
+        // First check if the prefix parsed is the same as the prefix given.
+        // Secondly check if they admin permissions to change it.
+        // If all else fails, send error message that user doesn't have
+        // permissions.
+        if (getCurrentPrefix() == arguments[2]) {
+            receivedMessage.channel.send(`The prefix is the same as the `+
+            `current prefix ` + retrieveConfusedEmojis());
+        } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
+            updatePrefix(arguments[2]);
+            receivedMessage.channel.send(`Prefix successfully updated to ` +
+            `**${arguments[2]}** :partying_face:`);
+
+        } else {
+            var authorId = receivedMessage.author.id;
+            receivedMessage.channel.send(`Sorry $<@${authorId}> you do not ` +
+            `have Admin permissions ` + retrieveConfusedEmojis());
+        }
+    } else if (userExists && checkLinking(arguments[1])) {
+        var permissionSliced = arguments.slice(2).join(" ");
+        permissionSliced = permissionSliced.split(new
+            RegExp(`${retrieveConjunctive().join("|")}`));
+
+        // https://stackoverflow.com/a/46294003
+        // https://reactgo.com/javascript-variable-regex/
+
+        console.log(permissionSliced);
+        if (checkPermissionsExist(permissionSliced)) {
+
+        }
+        console.log(permissionSliced);
+    } else {
+        receivedMessage.channel.send(`What kind of prefix did you mean? ` +
+        retrieveConfusedEmojis())
+    }
+}
+
+function processLoveRequest(receivedMessage) {
+    var index = receivedMessage.content.indexOf("love");
+    var slicedMessage = receivedMessage.content.slice(0, index);
+    var splitArray = slicedMessage.split(" ");
+    // https://www.cloudhadoop.com/typescript-check-boolean-array/
+    var isAntithetical = splitArray.map(function(word) {
+        return retrieveAntithesis().includes(word);
+    }).includes(true);
+    if (!isAntithetical) {
+        receivedMessage.react("🇮");
+        receivedMessage.react(randomHeartGen());
+        receivedMessage.react("🇺");
+    } else {
+        receivedMessage.react("💔");
+    }
+}
+
+function processWhoIs(receivedMessage, arguments) {
+    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
+
+    // We check for all the possible queries (userID, user nickname and
+    // if mentioned). Then we create a response as a result.
+    var user = retrieveMentionUser(receivedMessage, arguments, 0);
+    if (user) {
+        var userDetails = client.users.cache.get(user.id);
+        var member = receivedMessage.guild.member(userDetails);
+        var embed = createWhoIsEmbed(member, user, userDetails);
+    } else {
+        var embed = createErrorEmbed(arguments);
+    }
+
+    receivedMessage.channel.send({embed: embed});
+}
+
+function retrieveWikiResults(receivedMessage, query) {
+    wiki()
+    .page(query)
+    .then(function(page) {
+        console.log(page.raw);
+
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+        return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
+    })
+    .then(values => {
+        // Format of values is the return statement above:
+        // imageURL, summaryText, fullURL, title.
+        createWikiEmbed(receivedMessage, values[0], values[1], values[2], values[3]);
+    }) // Bruce Wayne
+    .catch(err => console.log(err));
+}
+
 
 // Please enter a valid job title.
 function retrieveSalaryData(receivedMessage, job) {
@@ -219,8 +281,8 @@ function retrieveConfusedEmojis() {
 }
 
 function retrieveCity(receivedMessage, argumentsJoined) {
-    var location = spawn("python", [path.join(process.cwd(),
-        path.join("locations", "location.py")), argumentsJoined]);
+    var location = spawn("python", [path.join(process.cwd(), "locations",
+        "location.py"), argumentsJoined]);
     location.stdout.on("data", (data) => {
         var result = data.toString();
 
@@ -369,9 +431,8 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
         var pathCoords = jsonResp.routes[0].geometry.coordinates;
 
         // https://github.com/mapbox/path-gradients
-        var gradients = spawn("node", [path.join(process.cwd(), path.join(
-            "path-gradients", "main.js"
-        )), JSON.stringify(pathCoords)]);
+        var gradients = spawn("node", [path.join(process.cwd(),
+            "path-gradients", "main.js"), JSON.stringify(pathCoords)]);
         gradients.stdout.on("data", (data) => {
             var polylineString = data.toString();
             var locationsEmbed = createLocationsEmbed(fullAddress, polylineString);
@@ -387,32 +448,61 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
     }).catch(err => console.log(err));
 }
 
+function createWikiEmbed(receivedMessage, imageURL, summaryText, fullURL, title) {
+    var wikiEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(title)
+        .setURL(fullURL)
+        .setDescription(summaryText.slice(0, 256) + "...")
+        .setImage(imageURL)
+        .setFooter("Data provided by: Wikipedia!")
+    receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+}
+
 function createLocationsEmbed(fullAddress, polylineString) {
     // https://stackoverflow.com/a/10805198
     polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
     var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
+
+    // https://www.mapbox.com/about/press/brand-guidelines
     var locationsEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
         .setTitle(`From ${fullAddress} to UNSW!`)
         .setImage(imageURL)
-        .setFooter("Data Provided by: © 2020 Mapbox, Inc")
+        .setFooter("Data Provided by: © 2020 Mapbox, Inc", "https://assets-global.website-files.com/5d3ef00c73102c436bc83996/5d3ef00c73102c893bc83a28_logo-regular.png")
     return locationsEmbed;
 }
 
-// https://api.mapbox.com/geocoding/v5/mapbox.places/High%20Street%20Kensington.json?types=address&country=AU&limit=1&access_token=${mapboxPublicKey}
+function retrieveAntithesis() {
+    return [
+        "not",
+        "don't",
+        "hate"
+    ]
+}
+
 function retrieveConjunctive() {
     return [
         "and",
+        "also",
         "as well as",
         "with",
-        "moreover",
         "in addition",
         "in addition to"
     ]
 }
 
+function checkPermissionsExist(permission) {
+    var permissions = retrievePermissions();
+    var permissionFound = permissions.indexOf(permission.toUpperCase());
+    if (permissionFound >= 0) {
+        return permissions[permissionFound];
+    }
+    return;
+}
+
 // https://discord.com/developers/docs/topics/permissions
-function retrievePermissions(permission) {
+function retrievePermissions() {
     var permissions = [
         "CREATE INSTANT INVITE",
         "KICK MEMBERS",
@@ -446,11 +536,7 @@ function retrievePermissions(permission) {
         "MANAGE WEBHOOKS",
         "MANAGE EMOJIS"
     ];
-    var permissionFound = permissions.indexOf(permission);
-    if (permissionFound >= 0) {
-        return permissions[permissionFound];
-    }
-    return "";
+    return permissions;
 }
 
 function checkLinking(argument) {
@@ -546,17 +632,17 @@ function getCurrentPrefix() {
     return jsonFile["prefix"];
 }
 
-function helpCommand(arguments, receivedMessage) {
+function helpCommand(receivedMessage, arguments) {
     if (arguments.length == 0) {
         receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
         `${prefix}help [topic]`);
     } else {
         receivedMessage.channel.send("It looks like you need help with " +
-        arguments)
+        arguments);
     }
 }
 
-function play(arguments, receivedMessage) {
+function play(receivedMessage, arguments) {
     if (arguments[0] == "movie") {
         if (arguments[1] == "joker") {
             receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793723640495079444/Joker.webm")
@@ -569,4 +655,4 @@ function play(arguments, receivedMessage) {
     }
 }
 
-client.login(token)
+client.login(token);
