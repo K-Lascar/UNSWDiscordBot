@@ -98,62 +98,22 @@ function processCommand(receivedMessage) {
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`<@${authorId}>`);
-        // receivedMessage.reply("no arguments were provided, please use command: "
-        // + `**${prefix} help**`)
+
     } else if (primaryCommand == "help") {
         helpCommand(arguments, receivedMessage);
     } else if (primaryCommand == "play") {
         play(arguments, receivedMessage);
     } else if (primaryCommand == "whois") {
-        // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
-
-        // We check for all the possible queries (userID, user nickname and
-        // if mentioned). Then we create a response as a result.
-        var user = retrieveMentionUser(receivedMessage, arguments, 0);
-        if (user) {
-            var userDetails = client.users.cache.get(user.id);
-            var member = receivedMessage.guild.member(userDetails);
-            var embed = createWhoIsEmbed(member, user, userDetails);
-        } else {
-            var embed = createErrorEmbed(arguments);
-        }
-
-        receivedMessage.channel.send({embed: embed});
+        processWhoIs(receivedMessage, arguments);
     } else if (receivedMessage.content.includes("love")) {
-        var index = receivedMessage.content.indexOf("love");
-        var slicedMessage = receivedMessage.content.slice(0, index);
-        var splitArray = slicedMessage.split(" ");
-        // https://www.cloudhadoop.com/typescript-check-boolean-array/
-        var isAntithetical = splitArray.map(function(word) {
-            return retrieveAntithesis().includes(word);
-        }).includes(true);
-        if (!isAntithetical) {
-            receivedMessage.react("🇮");
-            receivedMessage.react(randomHeartGen());
-            receivedMessage.react("🇺");
-        } else {
-            receivedMessage.react("💔");
-        }
+        processLoveRequest(receivedMessage);
 
     } else if ((primaryCommand == "change" ||
                 primaryCommand == "update" ||
                 primaryCommand == "modify" ||
                 primaryCommand == "set") &&
                 arguments.length >= 4) {
-        // Need to change this example and functionality.
-        // botName change prefix as/with/to apples
-        // botName update harold as/with/to mod
-        var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
-        if (arguments[1] == "prefix" && checkLinking(arguments[2])) {
-            console.log(receivedMessage.author);
-            updatePrefix(arguments[3]);
-            receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
-        } else if (userExists && checkLinking(arguments[2])) {
-            permissionSliced = arguments.slice(3).join(" ");
-            // https://stackoverflow.com/a/46294003
-            // https://reactgo.com/javascript-variable-regex/
-            permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
-        }
+        processUpdate(receivedMessage, arguments);
 
     } else if (primaryCommand == "test") {
         var authorId = receivedMessage.author.id;
@@ -161,20 +121,14 @@ function processCommand(receivedMessage) {
 
     } else if (primaryCommand == "weather") {
 
+        // Add Else.
         if (arguments.length >= 1) {
             retrieveCity(message, arguments.join());
         }
 
     // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
-        if (arguments[0] == "from") {
-            var addressSliced = arguments.slice(1);
-            getAddressCoords(receivedMessage, addressSliced.join(" "));
-        } else {
-            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
-            `please specify **${getCurrentPrefix()} directions from <Address>**`)
-        }
-
+        processDirection(receivedMessage, arguments);
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
 
@@ -184,6 +138,67 @@ function processCommand(receivedMessage) {
     } else {
         receivedMessage.channel.send(retrieveConfusedEmojis());
     }
+}
+
+function processDirection(receivedMessage, arguments) {
+    if (arguments[0] == "from") {
+        var addressSliced = arguments.slice(1);
+        getAddressCoords(receivedMessage, addressSliced.join(" "));
+    } else {
+        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+        `please specify **${getCurrentPrefix()} directions from <Address>**`)
+    }
+}
+
+function processUpdate(receivedMessage, arguments) {
+    // Need to change this example and functionality.
+    // botName change prefix as/with/to apples
+    // botName update harold as/with/to mod
+    var userExists = retrieveMentionUser(receivedMessage, arguments, 1);
+    if (arguments[1] == "prefix" && checkLinking(arguments[2])) {
+        console.log(receivedMessage.author);
+        updatePrefix(arguments[3]);
+        receivedMessage.channel.send(`Prefix successfully updated to **${arguments[3]}** :partying_face:`);
+    } else if (userExists && checkLinking(arguments[2])) {
+        permissionSliced = arguments.slice(3).join(" ");
+        // https://stackoverflow.com/a/46294003
+        // https://reactgo.com/javascript-variable-regex/
+        permissionSliced = permissionSliced.split(new RegExp(`${retrieveConjunctive().join("|")}`));
+    }
+}
+
+function processLoveRequest(receivedMessage) {
+    var index = receivedMessage.content.indexOf("love");
+    var slicedMessage = receivedMessage.content.slice(0, index);
+    var splitArray = slicedMessage.split(" ");
+    // https://www.cloudhadoop.com/typescript-check-boolean-array/
+    var isAntithetical = splitArray.map(function(word) {
+        return retrieveAntithesis().includes(word);
+    }).includes(true);
+    if (!isAntithetical) {
+        receivedMessage.react("🇮");
+        receivedMessage.react(randomHeartGen());
+        receivedMessage.react("🇺");
+    } else {
+        receivedMessage.react("💔");
+    }
+}
+
+function processWhoIs(receivedMessage, arguments) {
+    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
+
+    // We check for all the possible queries (userID, user nickname and
+    // if mentioned). Then we create a response as a result.
+    var user = retrieveMentionUser(receivedMessage, arguments, 0);
+    if (user) {
+        var userDetails = client.users.cache.get(user.id);
+        var member = receivedMessage.guild.member(userDetails);
+        var embed = createWhoIsEmbed(member, user, userDetails);
+    } else {
+        var embed = createErrorEmbed(arguments);
+    }
+
+    receivedMessage.channel.send({embed: embed});
 }
 
 function retrieveWikiResults(receivedMessage, query) {
