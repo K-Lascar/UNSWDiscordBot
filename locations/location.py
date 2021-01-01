@@ -6,6 +6,9 @@ def capitalise_args():
     return "".join(argv[1:]).title()
 
 if __name__ == "__main__":
+
+    # GeoText may have a limitation in that it only retrieve populations > 15000
+    # As it retrieves data from http://download.geonames.org/export/dump/cities15000.zip
     city = GeoText(capitalise_args()).cities
 
     if city != []:

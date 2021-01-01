@@ -1,6 +1,6 @@
 const Discord = require("discord.js")
 const client = new Discord.Client()
-const {prefix, token, generalChannelID, openWeatherAPIKey,
+const {prefix, token, openWeatherAPIKey,
     mapboxPublicKey} = require("./config.json");
 const fetch = require("node-fetch");
 const fs = require("fs");
@@ -20,37 +20,47 @@ client.on("ready", () =>{
 
     console.log("Connected as " + client.user.tag)
 
+    // Set Bot Activity to Watching Youtube.
     client.user.setActivity("📺Youtube📺", {type:"WATCHING"})
 
-    // client.client_presence.updatePresence()
-
+    // Prints each channel in the server/guild.
+    var mainChannelID;
     client.guilds.cache.forEach((guilds) => {
         console.log(guilds.name)
+        var flag = true;
         guilds.channels.cache.forEach((channels) => {
-            console.log(`-- ${channels.name} ${channels.type} ${channels.id}`)
+            console.log(`-- ${channels.name} ${channels.type} ${channels.id}`);
+            if (channels.type == "text" && flag) {
+                mainChannelID = channels.id;
+                flag = false;
+            }
         })
     })
 
-    let generalChannel = client.channels.cache.get(generalChannelID)
+    // Add cool loading animation to main channel.
+    let generalChannel = client.channels.cache.get(mainChannelID)
     const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
-
     generalChannel.send(attachment)
     .then(msg => {
         msg.delete({timeout: 8000})
-    }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
+    }).catch(err => console.log(err));
 })
 
+// When the bot receives a message it will execute this.
 client.on("message", (receivedMessage) => {
 
+    // Don't accept any messages outputted by the bot.
     if (receivedMessage.author.bot) {
-        return
+        return;
     }
 
+    // If prefix is specified we will process the command.
     if (receivedMessage.content.startsWith(prefix)) {
         processCommand(receivedMessage);
     }
 })
 
+// This function picks a random avatar from the assets/avatars folder.
 function randomAvatarPicker() {
     return [
         path.join("assets", "avatars", "unsw_aqua_logo.png"),
@@ -68,6 +78,7 @@ function randomAvatarPicker() {
     ][Math.floor(Math.random() * 11)];
 }
 
+// This function picks a random hex colour.
 function randomColourPicker() {
     return [0x7fffd4, 0x458b74, 0x838b8b, 0xff4040, 0x5f9ea0,
     0x7fff00, 0xff3e96, 0x00c5cd, 0xee5c42, 0xcdc9c9, 0xffa54f, 0xee7942,
@@ -75,12 +86,14 @@ function randomColourPicker() {
     0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)];
 }
 
+// This function generates a random heart emoji.
 function randomHeartGen() {
     return [
         "❤", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍"
     ][Math.floor(Math.random() * 9)];
 }
 
+// This function processes all command (nuts and bolts of this program).
 function processCommand(receivedMessage) {
     var fullCommand = receivedMessage.content.substr(prefix.length + 1);
 
@@ -96,7 +109,6 @@ function processCommand(receivedMessage) {
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`<@${authorId}>`);
-
     } else if (primaryCommand == "help") {
         helpCommand(receivedMessage, arguments);
     } else if (primaryCommand == "play") {
@@ -118,13 +130,16 @@ function processCommand(receivedMessage) {
 
     } else if (primaryCommand == "weather") {
 
-        // Add Else.
         if (arguments.length >= 1) {
-            retrieveCity(message, arguments.join());
+            processWeather(message, arguments.join());
+        } else {
+            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
+            `please specify **${getCurrentPrefix()} weather <city>**`);
         }
 
-    // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
+
+        // https://www.youtube.com/watch?v=AFmebufTce4
         processDirection(receivedMessage, arguments);
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
@@ -137,22 +152,24 @@ function processCommand(receivedMessage) {
     }
 }
 
+// This function will process directions, if a user provides
+// a valid address, it will parse the address provided into the
+// getAddressCoords function, which will eventually send an embed
+// to the user of the directions.
 function processDirection(receivedMessage, arguments) {
     if (arguments[0] == "from") {
         var addressSliced = arguments.slice(1);
         getAddressCoords(receivedMessage, addressSliced.join(" "));
     } else {
-        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
         `please specify **${getCurrentPrefix()} directions from <Address>**`)
     }
 }
 
+// This function will update either the prefix or the permissions for a specific
+// user in the given channel.
 function processUpdate(receivedMessage, arguments) {
-    // Need to change this example and functionality.
-    // botName change prefix as/with/to apples
-    // botName update harold as/with/to mod
     var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
-    console.log(userExists);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
         // First check if the prefix parsed is the same as the prefix given.
@@ -165,7 +182,7 @@ function processUpdate(receivedMessage, arguments) {
         } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
             updatePrefix(arguments[2]);
             receivedMessage.channel.send(`Prefix successfully updated to ` +
-            `**${arguments[2]}** :partying_face:.`);
+            `**${arguments[2]}** 🥳`);
 
         } else {
             var authorId = receivedMessage.author.id;
@@ -173,53 +190,86 @@ function processUpdate(receivedMessage, arguments) {
             `have Admin permissions. ` + retrieveConfusedEmojis());
         }
     } else if (userExists && checkLinking(arguments[1])) {
+
+        // This will slice all the permissions from index 2 onwards.
+        // Then retrieve every unique permission from the message.
+        // If an Admin was to specify that userA would like to have permissionA
+        // and permissionB then we split it based on this.
+
+        // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
         var permissionSliced = arguments.slice(2).join(" ");
         permissionSliced = permissionSliced.split(new
             RegExp(`${retrieveConjunctive().join("|")}`));
 
         // https://stackoverflow.com/a/46294003
         // https://reactgo.com/javascript-variable-regex/
-        // console.log(receivedMessage.author);
-        // console.log(permissionSliced);
         permissionSliced.map(function(permission) {
-            var authorId = receivedMessage.author.id;
+            var author = receivedMessage.author;
+            var authorId = author.id;
+
             if (checkPermissionsExist(permission)) {
-                var author = receivedMessage.author;
-                var userDetails = client.users.cache.get(userExists.id);
-                var member = receivedMessage.guild.member(userDetails);
-                // console.log(receivedMessage.member);
-                // console.log(member);
+
                 permission = permission.split(" ").join("_");
-                if (member.hasPermission(permission)) {
-                    receivedMessage.channel.send(`${author} already has this `+
-                    `permission. ` + retrieveConfusedEmojis());
+
+                // We initially check if the user has the permissions specified.
+                // Otherwise we check if the user is administrator and change
+                // the specified user's permissions. If all else fails, we send
+                // a response, stating the user doesn't have administrator
+                // permissions.
+
+                // https://stackoverflow.com/a/60642417/14151099
+                if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
+                    receivedMessage.channel.send(`**${userExists.username}** ` +
+                    `already has this permission. ` + retrieveConfusedEmojis());
                 } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
+
+                    // Add requested user permissions to be added as well as old
+                    // permissions to be added.
                     var channel = receivedMessage.channel;
-                    channel.updateOverwrite(userExists, {
-                        permission: true
-                    })
-                    .then(channel => console.log(channel))
+                    var currentPerm = channel.permissionOverwrites.values();
+                    // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
+                    channel.overwritePermissions([
+                        {
+                            id: userExists.id,
+                            allow: [permission],
+                        },
+                    ].concat(Array.from(currentPerm)))
                     .catch(err => console.log(err));
+
+                    var readablePerm = permission.split("_").join(" ");
+                    receivedMessage.channel.send(`Granted **${readablePerm}**` +
+                    ` to ${userExists.username}! 😁`)
                 } else {
+
+                    // Unauthorised Response.
                     receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
-                    ` do not have Admin permissions. ` +
+                    `do not have Admin permissions. ` +
                     retrieveConfusedEmojis());
                 }
                 // CHECK USER HAS PERMS IF SO STATE WHY CHANGE PERMS
                 // OTHERWISE CHECK USER CHANGING PERMS/RUNNING COMMAND HAS PERMISSIONS
-                console.log(permission);
             } else {
                 receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
                 `permission doesn't exist, please provide a valid permission.`);
             }
         })
     } else {
-        receivedMessage.channel.send(`What kind of prefix did you mean? ` +
-        retrieveConfusedEmojis())
+
+        // Invalid Update Command.
+        receivedMessage.channel.send(`What kind of update did you mean? ` +
+        retrieveConfusedEmojis());
     }
 }
 
+// This function will process a love request. If a user specifies their
+// message will receive reaction.
+
 function processLoveRequest(receivedMessage) {
+
+    // We initially check if someone specifies a message that is antithetical
+    // e.g. {prefix} I don't love you.
+    // In this case we'd react with a broken heart.
+    // Otherwise we'd send a I <Heart Emoji> U.
     var index = receivedMessage.content.indexOf("love");
     var slicedMessage = receivedMessage.content.slice(0, index);
     var splitArray = slicedMessage.split(" ");
@@ -236,42 +286,50 @@ function processLoveRequest(receivedMessage) {
     }
 }
 
+// This function will process a whoIs, identifying the user's details (username,
+// date joined, date created and profile).
 function processWhoIs(receivedMessage, arguments) {
-    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
+
 
     // We check for all the possible queries (userID, user nickname and
     // if mentioned). Then we create a response as a result.
     var user = retrieveMentionUser(receivedMessage, arguments, 0);
     if (user) {
+        // Retrieve user object and from their we can find the member object.
+        // Which we can then pass into the createWhoIsEmbed.
+
         var userDetails = client.users.cache.get(user.id);
         var member = receivedMessage.guild.member(userDetails);
         var embed = createWhoIsEmbed(member, user, userDetails);
     } else {
+
+        // error Embed.
         var embed = createErrorEmbed(arguments);
     }
 
+    // Send Embed.
     receivedMessage.channel.send({embed: embed});
 }
 
+// This function will query on Wikipedia and return a given embed for the query.
 function retrieveWikiResults(receivedMessage, query) {
     wiki()
     .page(query)
     .then(function(page) {
-        console.log(page.raw);
-
+        // console.log(page.raw);
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
         return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
     })
     .then(values => {
         // Format of values is the return statement above:
         // imageURL, summaryText, fullURL, title.
-        createWikiEmbed(receivedMessage, values[0], values[1], values[2], values[3]);
-    }) // Bruce Wayne
+        var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
+        receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+    })
     .catch(err => console.log(err));
 }
 
-
-// Please enter a valid job title.
+// This function will retrieve salary data from a specified job.
 function retrieveSalaryData(receivedMessage, job) {
     var jobFormatted = job.join("-");
     var encodedJob = encodeURI(jobFormatted);
@@ -300,23 +358,31 @@ function retrieveSalaryData(receivedMessage, job) {
             `figures suggest the average base salary for ${jobString} ` +
             `is **${salary}**.`)
         }
-    })
+    }).catch(err => console.log(err));
 }
 
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
 function retrieveConfusedEmojis() {
     return ["😮", "🙁", "😕", "😧", "😢", "😞", "🤔",
-            "🤨"][Math.floor(Math.random() * 8)]
+            "🤨"][Math.floor(Math.random() * 8)];
 }
 
-function retrieveCity(receivedMessage, argumentsJoined) {
+// This function will process the weather, by checking the city is valid and
+// outputting it an embed for the result.
+function processWeather(receivedMessage, argumentsJoined) {
+
+    // We spawn the python program in the locations directory, which checks
+    // if the city specified exists, if so it outputs it to the command line.
     var location = spawn("python", [path.join(process.cwd(), "locations",
         "location.py"), argumentsJoined]);
-    location.stdout.on("data", (data) => {
-        var result = data.toString();
 
+    location.stdout.on("data", (data) => {
+
+        var result = data.toString();
         // Read this.
         // https://www.guru99.com/difference-equality-strict-operator-javascript.html
+
+        // Circumstance when no data is outputted onto the command line.
         if (result === "[]") {
             receivedMessage.reply("I'm sorry that city doesn't exist! " +
             retrieveConfusedEmojis());
@@ -325,16 +391,18 @@ function retrieveCity(receivedMessage, argumentsJoined) {
         getWeather(argumentsJoined, receivedMessage, result);
     })
 
+    // Close STDIO processes.
     location.on("close", (code) => {
         console.log(`Closed All Stdio with code: ${code}`);
     })
 
+    // Exit child process.
     location.on("exit", (code) => {
         console.log(`Exited Child Process with code: ${code}`);
     })
 }
 
-
+// This function will retrieve a emoji from a given iconCode.
 function getWeatherEmoji(iconCode){
     // Object based on https://openweathermap.org/weather-conditions
     return {
@@ -359,6 +427,8 @@ function getWeatherEmoji(iconCode){
     }[iconCode];
 }
 
+// This function will retrieve a weather a random weather response from the
+// given weather stats.
 function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
     icon) {
     return [
@@ -376,11 +446,8 @@ function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
 
 // Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
 // As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
-
-// https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
 // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
 function getWeather(argumentsJoined, receivedMessage, cityName) {
-    // In footer reference OpenWeatherMap and MapBox.
 
     // Account for forecast and Celsius/Fahrenheit
     var unit = argumentsJoined.includes("f") ||
@@ -392,12 +459,15 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
     fetch(weatherURL)
     .then(resp => resp.json())
     .then(jsonResp => {
+
+        // ~~ Truncates number to an integer.
         var message = retrieveWeatherResponses(cityName, ~~jsonResp.main.temp +
             unitSymbol, jsonResp.weather[0].description,
             ~~jsonResp.main.temp_max + unitSymbol, ~~jsonResp.main.temp_min +
             unitSymbol, jsonResp.weather[0].icon);
 
-        // Check rain greater than 0% and wind greater than 0%
+        // Add to message response only if the rain greater than 0% and wind
+        // greater than 0% (when it is important).
         if (jsonResp.weather.clouds > 0) {
             message += `There's also a ${jsonResp.weather.clouds}% chance of ` +
             `clouds.`
@@ -414,6 +484,7 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
 
 }
 
+// This function will get a given addresses coordinates.
 function getAddressCoords(receivedMessage, address) {
     var addressEncoded = encodeURI(address);
     // I don't know if this will break with Australian Territories where no path
@@ -424,19 +495,7 @@ function getAddressCoords(receivedMessage, address) {
     .then(jsonResp => {
         if (jsonResp.features === []) {
             var authorId = receivedMessage.author.id;
-            var invalidResp = [
-                `Hey <@${authorId}> that address doesn't exist ` +
-                retrieveConfusedEmojis() + ".",
-                `We're sorry <@${authorId}> we could not find ${address} ` +
-                retrieveConfusedEmojis() + ".",
-                `Hi <@${authorId}> We weren't able to identify ${address} ` +
-                retrieveConfusedEmojis() + ".",
-                `Sorry to break it to you but ${address} doesn't seem to ` +
-                `exist maybe it'll exist one day but not today ` +
-                retrieveConfusedEmojis() + ".",
-                `I'm afraid we cannot find that particular address ` +
-                `${address} ` + retrieveConfusedEmojis() + "."
-            ][Math.floor(Math.random() * 5)];
+            var invalidResp = retrieveInvalidAddResp(authorId);
             receivedMessage.channel.send(invalidResp);
             return;
         }
@@ -448,7 +507,7 @@ function getAddressCoords(receivedMessage, address) {
     });
 }
 
-// UNSW COORDS = LAT: -33.918488, LONG: 151.227858
+// This function will process directions from a given address to UNSW.
 function processDirections(addressCoords, fullAddress, receivedMessage) {
     var unswCoords = "151.217348,-33.957726"
     var directionCoords = `${addressCoords};${unswCoords}`;
@@ -477,7 +536,8 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
     }).catch(err => console.log(err));
 }
 
-function createWikiEmbed(receivedMessage, imageURL, summaryText, fullURL, title) {
+// This function will create a wiki embed.
+function createWikiEmbed(imageURL, summaryText, fullURL, title) {
     var wikiEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
         .setTitle(title)
@@ -485,13 +545,16 @@ function createWikiEmbed(receivedMessage, imageURL, summaryText, fullURL, title)
         .setDescription(summaryText.slice(0, 256) + "...")
         .setImage(imageURL)
         .setFooter("Data provided by: Wikipedia!")
-    receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+    return wikiEmbed;
 }
 
+// This function will create a location embed.
 function createLocationsEmbed(fullAddress, polylineString) {
+
     // https://stackoverflow.com/a/10805198
     polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
-    var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
+    var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`
+    .concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
 
     // https://www.mapbox.com/about/press/brand-guidelines
     var locationsEmbed = new Discord.MessageEmbed()
@@ -502,14 +565,17 @@ function createLocationsEmbed(fullAddress, polylineString) {
     return locationsEmbed;
 }
 
+// This function will retrieve a list antithetical words.
 function retrieveAntithesis() {
     return [
         "not",
         "don't",
-        "hate"
-    ]
+        "hate",
+        "dislike"
+    ];
 }
 
+// This function will retrieve a list conjunctives.
 function retrieveConjunctive() {
     return [
         "and",
@@ -517,9 +583,27 @@ function retrieveConjunctive() {
         "as well as",
         "with",
         "in addition to"
-    ]
+    ];
 }
 
+// This function will retrieve a random invalid address response.
+function retrieveInvalidAddResp(authorId) {
+    return [
+        `Hey <@${authorId}> that address doesn't exist ` +
+        retrieveConfusedEmojis() + ".",
+        `We're sorry <@${authorId}> we could not find ${address} ` +
+        retrieveConfusedEmojis() + ".",
+        `Hi <@${authorId}> We weren't able to identify ${address} ` +
+        retrieveConfusedEmojis() + ".",
+        `Sorry to break it to you but ${address} doesn't seem to ` +
+        `exist maybe it'll exist one day but not today ` +
+        retrieveConfusedEmojis() + ".",
+        `I'm afraid we cannot find that particular address ` +
+        `${address} ` + retrieveConfusedEmojis() + "."
+    ][Math.floor(Math.random() * 5)];
+}
+
+// This function will check if a given permission exists.
 function checkPermissionsExist(permission) {
     var permissions = retrievePermissions();
     var permissionFound = permissions.indexOf(permission.toUpperCase());
@@ -530,18 +614,12 @@ function checkPermissionsExist(permission) {
 }
 
 // https://discord.com/developers/docs/topics/permissions
+// The following permissions are only text permissions.
 function retrievePermissions() {
     var permissions = [
         "CREATE INSTANT INVITE",
-        "KICK MEMBERS",
-        "BAN MEMBERS",
-        "ADMINISTRATOR",
         "MANAGE CHANNELS",
-        "MANAGE GUILD",
         "ADD REACTIONS",
-        "VIEW AUDIT LOG",
-        "PRIORITY SPEAKER",
-        "STREAM",
         "VIEW CHANNEL",
         "SEND MESSAGES",
         "SEND TTS MESSAGES",
@@ -551,36 +629,28 @@ function retrievePermissions() {
         "READ MESSAGE HISTORY",
         "MENTION EVERYONE",
         "USE EXTERNAL EMOJIS",
-        "VIEW GUILD INSIGHTS",
-        "CONNECT",
-        "SPEAK",
-        "MUTE MEMBERS",
-        "DEAFEN MEMBERS",
-        "MOVE MEMBERS",
-        "USE VAD",
-        "CHANGE NICKNAME",
-        "MANAGE NICKNAMES",
         "MANAGE ROLES",
         "MANAGE WEBHOOKS",
-        "MANAGE EMOJIS"
     ];
     return permissions;
 }
 
+// This function checks if the argument specified is a linking wor.d
 function checkLinking(argument) {
     return ["with", "as", "to"].includes(argument);
 }
 
-// function chatWith
+// This function will create an error embed.
 function createErrorEmbed(arguments) {
     var errorEmbed = {
         // Color orange red.
         color: 0xff4500,
         title: `❌ Invalid User ${arguments.join(" ")}`,
-    }
+    };
     return errorEmbed;
 }
 
+// This function creates a weatherEmbed.
 function createWeatherEmbed(cityName, longitude, latitude, message) {
     var mapboxRequestURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${longitude},${latitude},10,0/400x300?access_token=${mapboxPublicKey}`
 
@@ -589,18 +659,24 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
         .setTitle(`Weather for ${cityName}`)
         .setDescription(message)
         .setImage(mapboxRequestURL)
-        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc")
+        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc");
     return weatherEmbed;
 }
 
+// This function creates a whoIsEmbed for a given user.
 function createWhoIsEmbed(memberObj, userObj, userDetails) {
     var date = new Date();
 
+    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
     // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
     // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
     // https://stackoverflow.com/a/50374666/14151099
-
     // https://www.xspdf.com/resolution/57184174.html
+    var currentDate = date.toDateString();
+    var currentHour = date.getHours();
+    // https://stackoverflow.com/a/10073737/14151099
+    var currentMin = date.getMinutes().toString().padStart(2, "0");
+    var currentSec = date.getSeconds().toString().padStart(2, "0");
     var messageEmbed = {
         color: randomColourPicker(),
         title: "User Profile",
@@ -631,12 +707,15 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
         description: `<@!${userDetails.id}>`,
         footer: {
             text: `ID: ${userDetails.id} \u200b` +
-            `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+            `${currentDate}, ${currentHour}:${currentMin}:${currentSec}`
         }
-    }
+    };
     return messageEmbed;
 }
 
+// This function will retrieve a user, checking either it was mentioned,
+// identified (retrieved by an ID) or the start of a given user's name is
+// specified.
 function retrieveMentionUser(receivedMessage, arguments, index) {
     var isMentioned = receivedMessage.mentions.users.first();
     var isIdentified = client.users.cache.get(arguments[index]);
@@ -644,8 +723,10 @@ function retrieveMentionUser(receivedMessage, arguments, index) {
     return isMentioned || isIdentified || isSelected;
 }
 
-// This function changes prefix.
+// This function updates the prefix.
 function updatePrefix(newPrefix) {
+
+    // First we parse it, then we modify the prefix, then we store it.
 
     // https://stackoverflow.com/a/21035861
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
@@ -655,6 +736,7 @@ function updatePrefix(newPrefix) {
     fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
 }
 
+// This function will retrieve the current prefix in the config.json file.
 function getCurrentPrefix() {
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
     return jsonFile["prefix"];
@@ -670,6 +752,7 @@ function helpCommand(receivedMessage, arguments) {
     }
 }
 
+// This function will play a given movie (joker or shrek).
 function play(receivedMessage, arguments) {
     if (arguments[0] == "movie") {
         if (arguments[1] == "joker") {
@@ -679,7 +762,8 @@ function play(receivedMessage, arguments) {
         }
     } else {
         var authorId = receivedMessage.author.id;
-        receivedMessage.channel.send(`Oh no! We could not find that video <@${authorId}>.`)
+        receivedMessage.channel.send(`Oh no! We could not find that video ` +
+        `<@${authorId}>. 😢`)
     }
 }
 
