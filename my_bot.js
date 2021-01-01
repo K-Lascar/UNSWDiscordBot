@@ -20,37 +20,47 @@ client.on("ready", () =>{
 
     console.log("Connected as " + client.user.tag)
 
+    // Set Bot Activity to Watching Youtube.
     client.user.setActivity("📺Youtube📺", {type:"WATCHING"})
 
-    // client.client_presence.updatePresence()
-
+    // Prints each channel in the server/guild.
+    var mainChannelID;
     client.guilds.cache.forEach((guilds) => {
         console.log(guilds.name)
+        var flag = true;
         guilds.channels.cache.forEach((channels) => {
-            console.log(`-- ${channels.name} ${channels.type} ${channels.id}`)
+            console.log(`-- ${channels.name} ${channels.type} ${channels.id}`);
+            if (channels.type == "text" && flag) {
+                mainChannelID = channels.id;
+                flag = false;
+            }
         })
     })
 
-    let generalChannel = client.channels.cache.get(generalChannelID)
+    // Add cool loading animation to main channel.
+    let generalChannel = client.channels.cache.get(mainChannelID)
     const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
-
     generalChannel.send(attachment)
     .then(msg => {
         msg.delete({timeout: 8000})
-    }).catch(/*Your Error handling if the Message isn't returned, sent, etc.*/)
+    }).catch(err => console.log(err));
 })
 
+// When the bot receives a message it will execute this.
 client.on("message", (receivedMessage) => {
 
+    // Don't accept any messages outputted by the bot.
     if (receivedMessage.author.bot) {
-        return
+        return;
     }
 
+    // If prefix is specified we will process the command.
     if (receivedMessage.content.startsWith(prefix)) {
         processCommand(receivedMessage);
     }
 })
 
+// This function picks a random avatar from the assets/avatars folder.
 function randomAvatarPicker() {
     return [
         path.join("assets", "avatars", "unsw_aqua_logo.png"),
@@ -68,6 +78,7 @@ function randomAvatarPicker() {
     ][Math.floor(Math.random() * 11)];
 }
 
+// This function picks a random hex colour.
 function randomColourPicker() {
     return [0x7fffd4, 0x458b74, 0x838b8b, 0xff4040, 0x5f9ea0,
     0x7fff00, 0xff3e96, 0x00c5cd, 0xee5c42, 0xcdc9c9, 0xffa54f, 0xee7942,
@@ -75,12 +86,14 @@ function randomColourPicker() {
     0xee00ee, 0xfaf0e6, 0xffffe0, 0x00ffcc][Math.floor(Math.random() * 23)];
 }
 
+// This function generates a random heart emoji.
 function randomHeartGen() {
     return [
         "❤", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍"
     ][Math.floor(Math.random() * 9)];
 }
 
+// This function processes all command (nuts and bolts of this program).
 function processCommand(receivedMessage) {
     var fullCommand = receivedMessage.content.substr(prefix.length + 1);
 
@@ -96,7 +109,6 @@ function processCommand(receivedMessage) {
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`<@${authorId}>`);
-
     } else if (primaryCommand == "help") {
         helpCommand(receivedMessage, arguments);
     } else if (primaryCommand == "play") {
@@ -118,13 +130,16 @@ function processCommand(receivedMessage) {
 
     } else if (primaryCommand == "weather") {
 
-        // Add Else.
         if (arguments.length >= 1) {
             retrieveCity(message, arguments.join());
+        } else {
+            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+            `please specify **${getCurrentPrefix()} weather from <Address>**`);
         }
 
-    // https://www.youtube.com/watch?v=AFmebufTce4
     } else if (primaryCommand == "directions") {
+
+        // https://www.youtube.com/watch?v=AFmebufTce4
         processDirection(receivedMessage, arguments);
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
@@ -137,6 +152,7 @@ function processCommand(receivedMessage) {
     }
 }
 
+// This program
 function processDirection(receivedMessage, arguments) {
     if (arguments[0] == "from") {
         var addressSliced = arguments.slice(1);
@@ -152,7 +168,7 @@ function processUpdate(receivedMessage, arguments) {
     // botName change prefix as/with/to apples
     // botName update harold as/with/to mod
     var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
-    console.log(userExists);
+    // console.log(userExists);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
         // First check if the prefix parsed is the same as the prefix given.
@@ -165,7 +181,7 @@ function processUpdate(receivedMessage, arguments) {
         } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
             updatePrefix(arguments[2]);
             receivedMessage.channel.send(`Prefix successfully updated to ` +
-            `**${arguments[2]}** :partying_face:.`);
+            `**${arguments[2]}** 🥳`);
 
         } else {
             var authorId = receivedMessage.author.id;
@@ -182,40 +198,49 @@ function processUpdate(receivedMessage, arguments) {
         // console.log(receivedMessage.author);
         // console.log(permissionSliced);
         permissionSliced.map(function(permission) {
-            var authorId = receivedMessage.author.id;
+            var author = receivedMessage.author;
+            var authorId = author.id;
             if (checkPermissionsExist(permission)) {
-                var author = receivedMessage.author;
-                var userDetails = client.users.cache.get(userExists.id);
-                console.log(userDetails);
-                var member = receivedMessage.guild.member(userDetails);
-                console.log(member);
-                // console.log(receivedMessage.member);
-                // console.log(member);
                 permission = permission.split(" ").join("_");
-                if (member.hasPermission(permission)) {
-                    receivedMessage.channel.send(`${author} already has this `+
-                    `permission. ` + retrieveConfusedEmojis());
+                // https://stackoverflow.com/a/60642417/14151099
+                if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
+                    receivedMessage.channel.send(`**${userExists.username}** ` +
+                    `already has this permission. ` + retrieveConfusedEmojis());
                 } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
+
+                    // Add requested user permissions to be added as well as old
+                    // permissions to be added.
                     var channel = receivedMessage.channel;
-                    channel.updateOverwrite(userExists, {
-                        permission: true
-                    })
-                    .then(channel => console.log(channel))
+                    var currentPerm = channel.permissionOverwrites.values();
+                    // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
+                    channel.overwritePermissions([
+                        {
+                            id: userExists.id,
+                            allow: [permission],
+                        },
+                    ].concat(Array.from(currentPerm)))
                     .catch(err => console.log(err));
+
+                    var readablePerm = permission.split("_").join(" ");
+                    receivedMessage.channel.send(`Granted **${readablePerm}**` +
+                    ` to ${userExists.username}! 😁`)
                 } else {
+
+                    // Unauthorised Response.
                     receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
-                    ` do not have Admin permissions. ` +
+                    `do not have Admin permissions. ` +
                     retrieveConfusedEmojis());
                 }
                 // CHECK USER HAS PERMS IF SO STATE WHY CHANGE PERMS
                 // OTHERWISE CHECK USER CHANGING PERMS/RUNNING COMMAND HAS PERMISSIONS
-                console.log(permission);
             } else {
                 receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
                 `permission doesn't exist, please provide a valid permission.`);
             }
         })
     } else {
+
+        // Invalid Update Command.
         receivedMessage.channel.send(`What kind of update did you mean? ` +
         retrieveConfusedEmojis());
     }
@@ -532,18 +557,12 @@ function checkPermissionsExist(permission) {
 }
 
 // https://discord.com/developers/docs/topics/permissions
+// The following permissions are only text permissions.
 function retrievePermissions() {
     var permissions = [
         "CREATE INSTANT INVITE",
-        "KICK MEMBERS",
-        "BAN MEMBERS",
-        "ADMINISTRATOR",
         "MANAGE CHANNELS",
-        "MANAGE GUILD",
         "ADD REACTIONS",
-        "VIEW AUDIT LOG",
-        "PRIORITY SPEAKER",
-        "STREAM",
         "VIEW CHANNEL",
         "SEND MESSAGES",
         "SEND TTS MESSAGES",
@@ -553,18 +572,8 @@ function retrievePermissions() {
         "READ MESSAGE HISTORY",
         "MENTION EVERYONE",
         "USE EXTERNAL EMOJIS",
-        "VIEW GUILD INSIGHTS",
-        "CONNECT",
-        "SPEAK",
-        "MUTE MEMBERS",
-        "DEAFEN MEMBERS",
-        "MOVE MEMBERS",
-        "USE VAD",
-        "CHANGE NICKNAME",
-        "MANAGE NICKNAMES",
         "MANAGE ROLES",
         "MANAGE WEBHOOKS",
-        "MANAGE EMOJIS"
     ];
     return permissions;
 }
@@ -605,6 +614,7 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
     // https://www.xspdf.com/resolution/57184174.html
     var currentDate = date.toDateString();
     var currentHour = date.getHours();
+    // https://stackoverflow.com/a/10073737/14151099
     var currentMin = date.getMinutes().toString().padStart(2, "0");
     var currentSec = date.getSeconds().toString().padStart(2, "0");
     var messageEmbed = {
