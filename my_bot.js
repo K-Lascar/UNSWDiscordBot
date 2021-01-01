@@ -1,6 +1,6 @@
 const Discord = require("discord.js")
 const client = new Discord.Client()
-const {prefix, token, generalChannelID, openWeatherAPIKey,
+const {prefix, token, openWeatherAPIKey,
     mapboxPublicKey} = require("./config.json");
 const fetch = require("node-fetch");
 const fs = require("fs");
@@ -131,10 +131,10 @@ function processCommand(receivedMessage) {
     } else if (primaryCommand == "weather") {
 
         if (arguments.length >= 1) {
-            retrieveCity(message, arguments.join());
+            processWeather(message, arguments.join());
         } else {
-            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
-            `please specify **${getCurrentPrefix()} weather from <Address>**`);
+            receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
+            `please specify **${getCurrentPrefix()} weather <city>**`);
         }
 
     } else if (primaryCommand == "directions") {
@@ -152,23 +152,26 @@ function processCommand(receivedMessage) {
     }
 }
 
-// This program
+// This function will process directions, if a user provides
+// {prefix} directions from <Address>, it will parse the address provided
+// into the getAddressCoords function, which will eventually send an embed
+// to the user of the directions.
 function processDirection(receivedMessage, arguments) {
     if (arguments[0] == "from") {
         var addressSliced = arguments.slice(1);
         getAddressCoords(receivedMessage, addressSliced.join(" "));
     } else {
-        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()}` +
+        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
         `please specify **${getCurrentPrefix()} directions from <Address>**`)
     }
 }
 
+// This function will update either the prefix or the permissions for a specific
+// user in the given channel.
+// {prefix} change prefix as/with/to {newPrefix}
+// {prefix} update harold as/with/to {textPermission}
 function processUpdate(receivedMessage, arguments) {
-    // Need to change this example and functionality.
-    // botName change prefix as/with/to apples
-    // botName update harold as/with/to mod
     var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
-    // console.log(userExists);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
         // First check if the prefix parsed is the same as the prefix given.
@@ -189,19 +192,33 @@ function processUpdate(receivedMessage, arguments) {
             `have Admin permissions. ` + retrieveConfusedEmojis());
         }
     } else if (userExists && checkLinking(arguments[1])) {
+
+        // This will slice all the permissions from index 2 onwards.
+        // Then retrieve every unique permission from the message.
+        // If an Admin was to specify that userA would like to have permissionA
+        // and permissionB then we split it based on this.
+
+        // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
         var permissionSliced = arguments.slice(2).join(" ");
         permissionSliced = permissionSliced.split(new
             RegExp(`${retrieveConjunctive().join("|")}`));
 
         // https://stackoverflow.com/a/46294003
         // https://reactgo.com/javascript-variable-regex/
-        // console.log(receivedMessage.author);
-        // console.log(permissionSliced);
         permissionSliced.map(function(permission) {
             var author = receivedMessage.author;
             var authorId = author.id;
+
             if (checkPermissionsExist(permission)) {
+
                 permission = permission.split(" ").join("_");
+
+                // We initially check if the user has the permissions specified.
+                // Otherwise we check if the user is administrator and change
+                // the specified user's permissions. If all else fails, we send
+                // a response, stating the user doesn't have administrator
+                // permissions.
+
                 // https://stackoverflow.com/a/60642417/14151099
                 if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
                     receivedMessage.channel.send(`**${userExists.username}** ` +
@@ -246,7 +263,14 @@ function processUpdate(receivedMessage, arguments) {
     }
 }
 
+// This function will process a love request. If a user specifies
+// {prefix} <any message containing the word love in it>
 function processLoveRequest(receivedMessage) {
+
+    // We initially check if someone specifies a message that is antithetical
+    // e.g. {prefix} I don't love you.
+    // In this case we'd react with a broken heart.
+    // Otherwise we'd send a I <Heart Emoji> U.
     var index = receivedMessage.content.indexOf("love");
     var slicedMessage = receivedMessage.content.slice(0, index);
     var splitArray = slicedMessage.split(" ");
@@ -263,45 +287,56 @@ function processLoveRequest(receivedMessage) {
     }
 }
 
+// This function will process a whoIs, identifying the user's details (username,
+// date joined, date created and profile).
 function processWhoIs(receivedMessage, arguments) {
-    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
+
 
     // We check for all the possible queries (userID, user nickname and
     // if mentioned). Then we create a response as a result.
     var user = retrieveMentionUser(receivedMessage, arguments, 0);
     if (user) {
+        // Retrieve user object and from their we can find the member object.
+        // Which we can then pass into the createWhoIsEmbed.
+
         var userDetails = client.users.cache.get(user.id);
         var member = receivedMessage.guild.member(userDetails);
         var embed = createWhoIsEmbed(member, user, userDetails);
     } else {
+
+        // error Embed.
         var embed = createErrorEmbed(arguments);
     }
 
+    // Send Embed.
     receivedMessage.channel.send({embed: embed});
 }
 
+// This function will query on Wikipedia and return a given embed for the query.
+// The format of the query is defined as:
+// {prefix} wiki/wikime/find/wikipedia <query>
 function retrieveWikiResults(receivedMessage, query) {
     wiki()
     .page(query)
     .then(function(page) {
-        console.log(page.raw);
-
+        // console.log(page.raw);
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
         return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
     })
     .then(values => {
         // Format of values is the return statement above:
         // imageURL, summaryText, fullURL, title.
-        createWikiEmbed(receivedMessage, values[0], values[1], values[2], values[3]);
-    }) // Bruce Wayne
+        var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
+        receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+    })
     .catch(err => console.log(err));
 }
 
-
-// Please enter a valid job title.
+// This function will retrieve salary data from a specified job.
 function retrieveSalaryData(receivedMessage, job) {
     var jobFormatted = job.join("-");
     var encodedJob = encodeURI(jobFormatted);
+
 
     // https://stackoverflow.com/a/42755730/14151099
     var jobString = job.map(function(word) {
@@ -327,7 +362,7 @@ function retrieveSalaryData(receivedMessage, job) {
             `figures suggest the average base salary for ${jobString} ` +
             `is **${salary}**.`)
         }
-    })
+    }).catch(err => console.log(err));
 }
 
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
@@ -336,7 +371,7 @@ function retrieveConfusedEmojis() {
             "🤨"][Math.floor(Math.random() * 8)]
 }
 
-function retrieveCity(receivedMessage, argumentsJoined) {
+function processWeather(receivedMessage, argumentsJoined) {
     var location = spawn("python", [path.join(process.cwd(), "locations",
         "location.py"), argumentsJoined]);
     location.stdout.on("data", (data) => {
@@ -504,7 +539,7 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
     }).catch(err => console.log(err));
 }
 
-function createWikiEmbed(receivedMessage, imageURL, summaryText, fullURL, title) {
+function createWikiEmbed(imageURL, summaryText, fullURL, title) {
     var wikiEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
         .setTitle(title)
@@ -512,7 +547,7 @@ function createWikiEmbed(receivedMessage, imageURL, summaryText, fullURL, title)
         .setDescription(summaryText.slice(0, 256) + "...")
         .setImage(imageURL)
         .setFooter("Data provided by: Wikipedia!")
-    receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+    return wikiEmbed;
 }
 
 function createLocationsEmbed(fullAddress, polylineString) {
@@ -533,8 +568,9 @@ function retrieveAntithesis() {
     return [
         "not",
         "don't",
-        "hate"
-    ]
+        "hate",
+        "dislike"
+    ];
 }
 
 function retrieveConjunctive() {
@@ -544,7 +580,7 @@ function retrieveConjunctive() {
         "as well as",
         "with",
         "in addition to"
-    ]
+    ];
 }
 
 function checkPermissionsExist(permission) {
@@ -604,13 +640,14 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
     return weatherEmbed;
 }
 
+// This function creates a whoIsEmbed for a given user.
 function createWhoIsEmbed(memberObj, userObj, userDetails) {
     var date = new Date();
 
+    // https://stackoverflow.com/questions/55605593/i-am-trying-to-make-a-discord-js-avatar-command-and-the-mentioning-portion-does
     // https://support.discord.com/hc/en-us/community/posts/360041823171/comments/360012230811
     // https://discordjs.guide/popular-topics/embeds.html#using-an-embed-object
     // https://stackoverflow.com/a/50374666/14151099
-
     // https://www.xspdf.com/resolution/57184174.html
     var currentDate = date.toDateString();
     var currentHour = date.getHours();
@@ -686,6 +723,7 @@ function helpCommand(receivedMessage, arguments) {
     }
 }
 
+// This function will play a given movie (joker or shrek).
 function play(receivedMessage, arguments) {
     if (arguments[0] == "movie") {
         if (arguments[1] == "joker") {
@@ -695,7 +733,8 @@ function play(receivedMessage, arguments) {
         }
     } else {
         var authorId = receivedMessage.author.id;
-        receivedMessage.channel.send(`Oh no! We could not find that video <@${authorId}>.`)
+        receivedMessage.channel.send(`Oh no! We could not find that video ` +
+        `<@${authorId}>. 😢`)
     }
 }
 
