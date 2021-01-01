@@ -337,7 +337,6 @@ function retrieveSalaryData(receivedMessage, job) {
     var jobFormatted = job.join("-");
     var encodedJob = encodeURI(jobFormatted);
 
-
     // https://stackoverflow.com/a/42755730/14151099
     var jobString = job.map(function(word) {
         return word[0].toUpperCase() + word.substr(1)
@@ -368,17 +367,25 @@ function retrieveSalaryData(receivedMessage, job) {
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
 function retrieveConfusedEmojis() {
     return ["😮", "🙁", "😕", "😧", "😢", "😞", "🤔",
-            "🤨"][Math.floor(Math.random() * 8)]
+            "🤨"][Math.floor(Math.random() * 8)];
 }
 
+// This function will process the weather, by checking the city is valid and
+// outputting it an embed for the result.
 function processWeather(receivedMessage, argumentsJoined) {
+
+    // We spawn the python program in the locations directory, which checks
+    // if the city specified exists, if so it outputs it to the command line.
     var location = spawn("python", [path.join(process.cwd(), "locations",
         "location.py"), argumentsJoined]);
-    location.stdout.on("data", (data) => {
-        var result = data.toString();
 
+    location.stdout.on("data", (data) => {
+
+        var result = data.toString();
         // Read this.
         // https://www.guru99.com/difference-equality-strict-operator-javascript.html
+
+        // Circumstance when no data is outputted onto the command line.
         if (result === "[]") {
             receivedMessage.reply("I'm sorry that city doesn't exist! " +
             retrieveConfusedEmojis());
@@ -387,16 +394,18 @@ function processWeather(receivedMessage, argumentsJoined) {
         getWeather(argumentsJoined, receivedMessage, result);
     })
 
+    // Close STDIO processes.
     location.on("close", (code) => {
         console.log(`Closed All Stdio with code: ${code}`);
     })
 
+    // Exit child process.
     location.on("exit", (code) => {
         console.log(`Exited Child Process with code: ${code}`);
     })
 }
 
-
+// This function will retrieve a emoji from a given iconCode.
 function getWeatherEmoji(iconCode){
     // Object based on https://openweathermap.org/weather-conditions
     return {
@@ -421,6 +430,8 @@ function getWeatherEmoji(iconCode){
     }[iconCode];
 }
 
+// This function will retrieve a weather a random weather response from the
+// given weather stats.
 function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
     icon) {
     return [
@@ -438,11 +449,8 @@ function retrieveWeatherResponses(cityName, temp, weatherDesc, tempMax, tempMin,
 
 // Inspired by AlphaBotSystem: https://github.com/alphabotsystem/Alpha
 // As well as FB AI ChatBot: https://github.com/girliemac/fb-apiai-bot-demo/
-
-// https://github.com/girliemac/fb-apiai-bot-demo/blob/master/webhook.js
 // https://www.smashingmagazine.com/2017/08/ai-chatbot-web-speech-api-node-js/
 function getWeather(argumentsJoined, receivedMessage, cityName) {
-    // In footer reference OpenWeatherMap and MapBox.
 
     // Account for forecast and Celsius/Fahrenheit
     var unit = argumentsJoined.includes("f") ||
@@ -454,12 +462,15 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
     fetch(weatherURL)
     .then(resp => resp.json())
     .then(jsonResp => {
+
+        // ~~ Truncates number to an integer.
         var message = retrieveWeatherResponses(cityName, ~~jsonResp.main.temp +
             unitSymbol, jsonResp.weather[0].description,
             ~~jsonResp.main.temp_max + unitSymbol, ~~jsonResp.main.temp_min +
             unitSymbol, jsonResp.weather[0].icon);
 
-        // Check rain greater than 0% and wind greater than 0%
+        // Add to message response only if the rain greater than 0% and wind
+        // greater than 0% (when it is important).
         if (jsonResp.weather.clouds > 0) {
             message += `There's also a ${jsonResp.weather.clouds}% chance of ` +
             `clouds.`
@@ -476,6 +487,7 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
 
 }
 
+// This function will get a given addresses coordinates.
 function getAddressCoords(receivedMessage, address) {
     var addressEncoded = encodeURI(address);
     // I don't know if this will break with Australian Territories where no path
@@ -486,19 +498,7 @@ function getAddressCoords(receivedMessage, address) {
     .then(jsonResp => {
         if (jsonResp.features === []) {
             var authorId = receivedMessage.author.id;
-            var invalidResp = [
-                `Hey <@${authorId}> that address doesn't exist ` +
-                retrieveConfusedEmojis() + ".",
-                `We're sorry <@${authorId}> we could not find ${address} ` +
-                retrieveConfusedEmojis() + ".",
-                `Hi <@${authorId}> We weren't able to identify ${address} ` +
-                retrieveConfusedEmojis() + ".",
-                `Sorry to break it to you but ${address} doesn't seem to ` +
-                `exist maybe it'll exist one day but not today ` +
-                retrieveConfusedEmojis() + ".",
-                `I'm afraid we cannot find that particular address ` +
-                `${address} ` + retrieveConfusedEmojis() + "."
-            ][Math.floor(Math.random() * 5)];
+            var invalidResp = retrieveInvalidAddResp(authorId);
             receivedMessage.channel.send(invalidResp);
             return;
         }
@@ -583,6 +583,23 @@ function retrieveConjunctive() {
     ];
 }
 
+function retrieveInvalidAddResp(authorId) {
+    return [
+        `Hey <@${authorId}> that address doesn't exist ` +
+        retrieveConfusedEmojis() + ".",
+        `We're sorry <@${authorId}> we could not find ${address} ` +
+        retrieveConfusedEmojis() + ".",
+        `Hi <@${authorId}> We weren't able to identify ${address} ` +
+        retrieveConfusedEmojis() + ".",
+        `Sorry to break it to you but ${address} doesn't seem to ` +
+        `exist maybe it'll exist one day but not today ` +
+        retrieveConfusedEmojis() + ".",
+        `I'm afraid we cannot find that particular address ` +
+        `${address} ` + retrieveConfusedEmojis() + "."
+    ][Math.floor(Math.random() * 5)];
+}
+
+
 function checkPermissionsExist(permission) {
     var permissions = retrievePermissions();
     var permissionFound = permissions.indexOf(permission.toUpperCase());
@@ -614,20 +631,22 @@ function retrievePermissions() {
     return permissions;
 }
 
+// This function checks if the argument specified is a linking wor.d
 function checkLinking(argument) {
     return ["with", "as", "to"].includes(argument);
 }
 
-// function chatWith
+// This function will create an error embed.
 function createErrorEmbed(arguments) {
     var errorEmbed = {
         // Color orange red.
         color: 0xff4500,
         title: `❌ Invalid User ${arguments.join(" ")}`,
-    }
+    };
     return errorEmbed;
 }
 
+// This function creates a weatherEmbed.
 function createWeatherEmbed(cityName, longitude, latitude, message) {
     var mapboxRequestURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${longitude},${latitude},10,0/400x300?access_token=${mapboxPublicKey}`
 
@@ -636,7 +655,7 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
         .setTitle(`Weather for ${cityName}`)
         .setDescription(message)
         .setImage(mapboxRequestURL)
-        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc")
+        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc");
     return weatherEmbed;
 }
 
@@ -686,10 +705,13 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
             text: `ID: ${userDetails.id} \u200b` +
             `${currentDate}, ${currentHour}:${currentMin}:${currentSec}`
         }
-    }
+    };
     return messageEmbed;
 }
 
+// This function will retrieve a user, checking either it was mentioned,
+// identified (retrieved by an ID) or the start of a given user's name is
+// specified.
 function retrieveMentionUser(receivedMessage, arguments, index) {
     var isMentioned = receivedMessage.mentions.users.first();
     var isIdentified = client.users.cache.get(arguments[index]);
@@ -697,8 +719,10 @@ function retrieveMentionUser(receivedMessage, arguments, index) {
     return isMentioned || isIdentified || isSelected;
 }
 
-// This function changes prefix.
+// This function updates the prefix.
 function updatePrefix(newPrefix) {
+
+    // First we parse it, then we modify the prefix, then we store it.
 
     // https://stackoverflow.com/a/21035861
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
@@ -708,6 +732,7 @@ function updatePrefix(newPrefix) {
     fs.writeFileSync("config.json", JSON.stringify(jsonFile, null, 4));
 }
 
+// This function will retrieve the current prefix in the config.json file.
 function getCurrentPrefix() {
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
     return jsonFile["prefix"];
