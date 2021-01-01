@@ -186,7 +186,9 @@ function processUpdate(receivedMessage, arguments) {
             if (checkPermissionsExist(permission)) {
                 var author = receivedMessage.author;
                 var userDetails = client.users.cache.get(userExists.id);
+                console.log(userDetails);
                 var member = receivedMessage.guild.member(userDetails);
+                console.log(member);
                 // console.log(receivedMessage.member);
                 // console.log(member);
                 permission = permission.split(" ").join("_");
@@ -214,8 +216,8 @@ function processUpdate(receivedMessage, arguments) {
             }
         })
     } else {
-        receivedMessage.channel.send(`What kind of prefix did you mean? ` +
-        retrieveConfusedEmojis())
+        receivedMessage.channel.send(`What kind of update did you mean? ` +
+        retrieveConfusedEmojis());
     }
 }
 
@@ -601,6 +603,10 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
     // https://stackoverflow.com/a/50374666/14151099
 
     // https://www.xspdf.com/resolution/57184174.html
+    var currentDate = date.toDateString();
+    var currentHour = date.getHours();
+    var currentMin = date.getMinutes().toString().padStart(2, "0");
+    var currentSec = date.getSeconds().toString().padStart(2, "0");
     var messageEmbed = {
         color: randomColourPicker(),
         title: "User Profile",
@@ -631,7 +637,7 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
         description: `<@!${userDetails.id}>`,
         footer: {
             text: `ID: ${userDetails.id} \u200b` +
-            `${date.toDateString()}, ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`
+            `${currentDate}, ${currentHour}:${currentMin}:${currentSec}`
         }
     }
     return messageEmbed;
