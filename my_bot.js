@@ -153,8 +153,8 @@ function processCommand(receivedMessage) {
 }
 
 // This function will process directions, if a user provides
-// {prefix} directions from <Address>, it will parse the address provided
-// into the getAddressCoords function, which will eventually send an embed
+// a valid address, it will parse the address provided into the
+// getAddressCoords function, which will eventually send an embed
 // to the user of the directions.
 function processDirection(receivedMessage, arguments) {
     if (arguments[0] == "from") {
@@ -168,8 +168,6 @@ function processDirection(receivedMessage, arguments) {
 
 // This function will update either the prefix or the permissions for a specific
 // user in the given channel.
-// {prefix} change prefix as/with/to {newPrefix}
-// {prefix} update harold as/with/to {textPermission}
 function processUpdate(receivedMessage, arguments) {
     var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
@@ -263,8 +261,9 @@ function processUpdate(receivedMessage, arguments) {
     }
 }
 
-// This function will process a love request. If a user specifies
-// {prefix} <any message containing the word love in it>
+// This function will process a love request. If a user specifies their
+// message will receive reaction.
+
 function processLoveRequest(receivedMessage) {
 
     // We initially check if someone specifies a message that is antithetical
@@ -313,8 +312,6 @@ function processWhoIs(receivedMessage, arguments) {
 }
 
 // This function will query on Wikipedia and return a given embed for the query.
-// The format of the query is defined as:
-// {prefix} wiki/wikime/find/wikipedia <query>
 function retrieveWikiResults(receivedMessage, query) {
     wiki()
     .page(query)
@@ -510,7 +507,7 @@ function getAddressCoords(receivedMessage, address) {
     });
 }
 
-// UNSW COORDS = LAT: -33.918488, LONG: 151.227858
+// This function will process directions from a given address to UNSW.
 function processDirections(addressCoords, fullAddress, receivedMessage) {
     var unswCoords = "151.217348,-33.957726"
     var directionCoords = `${addressCoords};${unswCoords}`;
@@ -539,6 +536,7 @@ function processDirections(addressCoords, fullAddress, receivedMessage) {
     }).catch(err => console.log(err));
 }
 
+// This function will create a wiki embed.
 function createWikiEmbed(imageURL, summaryText, fullURL, title) {
     var wikiEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
@@ -550,10 +548,13 @@ function createWikiEmbed(imageURL, summaryText, fullURL, title) {
     return wikiEmbed;
 }
 
+// This function will create a location embed.
 function createLocationsEmbed(fullAddress, polylineString) {
+
     // https://stackoverflow.com/a/10805198
     polylineString = polylineString.replace(/(\r\n|\n|\r)/gm, "")
-    var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`.concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
+    var imageURL = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/${polylineString}`
+    .concat(`/auto/600x600?access_token=${mapboxPublicKey}`)
 
     // https://www.mapbox.com/about/press/brand-guidelines
     var locationsEmbed = new Discord.MessageEmbed()
@@ -564,6 +565,7 @@ function createLocationsEmbed(fullAddress, polylineString) {
     return locationsEmbed;
 }
 
+// This function will retrieve a list antithetical words.
 function retrieveAntithesis() {
     return [
         "not",
@@ -573,6 +575,7 @@ function retrieveAntithesis() {
     ];
 }
 
+// This function will retrieve a list conjunctives.
 function retrieveConjunctive() {
     return [
         "and",
@@ -583,6 +586,7 @@ function retrieveConjunctive() {
     ];
 }
 
+// This function will retrieve a random invalid address response.
 function retrieveInvalidAddResp(authorId) {
     return [
         `Hey <@${authorId}> that address doesn't exist ` +
@@ -599,7 +603,7 @@ function retrieveInvalidAddResp(authorId) {
     ][Math.floor(Math.random() * 5)];
 }
 
-
+// This function will check if a given permission exists.
 function checkPermissionsExist(permission) {
     var permissions = retrievePermissions();
     var permissionFound = permissions.indexOf(permission.toUpperCase());
