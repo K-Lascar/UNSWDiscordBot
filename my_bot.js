@@ -406,7 +406,7 @@ function processWeather(receivedMessage, argumentsJoined) {
 function getWeatherEmoji(iconCode){
     // Object based on https://openweathermap.org/weather-conditions
     return {
-        "01d": "🌞",    // Clear Skys
+        "01d": "☀",    // Clear Skys
         "01n": "🌑",
         "02d": "⛅",    // Few Clouds
         "02n": "⛅",
@@ -742,13 +742,59 @@ function getCurrentPrefix() {
     return jsonFile["prefix"];
 }
 
+// Inspired by: https://dankmemer.lol/
+function createMainHelpEmbed() {
+    var prefix = getCurrentPrefix();
+    var helpEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(`**UNSW ChatBot's Command List**`)
+        .addFields(
+            {name: "🗺 **Directions**", value: `\`\`${prefix} help directions\`\``, inline: true},
+            {name: "🔐 **Permissions**", value: `\`\`${prefix} help permissions\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "🎥 **Play**", value: `\`\`${prefix} help play\`\``, inline: true},
+            {name: "🛠 **Prefix**", value: `\`\`${prefix} help prefix\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "💰 **Salary**", value: `\`\`${prefix} help salary\`\``, inline: true},
+            {name: "🌞 **Weather**", value: `\`\`${prefix} help weather\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "📰 **Wikipedia**", value: `\`\`${prefix} help wiki\`\``, inline: true},
+            {name: "🧐 **Whois**", value: `\`\`${prefix} help whois\`\``, inline: true},
+        )
+        .setTimestamp()
+    return helpEmbed;
+}
+
 function helpCommand(receivedMessage, arguments) {
     if (arguments.length == 0) {
-        receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
-        `${prefix}help [topic]`);
+        receivedMessage.channel.send(createMainHelpEmbed());
+        // receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
+        // `${prefix}help [topic]`);
+    } else if (arguments.length == 1) {
+        switch(arguments[0]) {
+            case "directions":
+                break;
+            case "permissions":
+                break;
+            case "play":
+                break;
+            case "prefix":
+                break;
+            case "salary":
+                break;
+            case "weather":
+                break;
+            case "wiki":
+                break;
+            case "whois":
+                break;
+            default:
+                receivedMessage.channel.send("It looks like you need help with " +
+                arguments);
+        }
     } else {
-        receivedMessage.channel.send("It looks like you need help with " +
-        arguments);
+        receivedMessage.channel.send("It looks like you've specified to many " +
+        "arguments");
     }
 }
 
