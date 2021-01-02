@@ -101,20 +101,24 @@ function processCommand(receivedMessage) {
     var splitCommand = fullCommand.split(/ +/);
     var primaryCommand = splitCommand[0];
     var arguments = splitCommand.slice(1);
-    console.log(receivedMessage.content)
-    console.log("Arguments: " + arguments)
-    console.log("SplitCommand: " + splitCommand)
-    console.log("PrimaryCommand: " + primaryCommand)
+    console.log(receivedMessage.content);
+    console.log("Arguments: " + arguments);
+    console.log("SplitCommand: " + splitCommand);
+    console.log("PrimaryCommand: " + primaryCommand);
 
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`<@${authorId}>`);
+
     } else if (primaryCommand == "help") {
         helpCommand(receivedMessage, arguments);
+
     } else if (primaryCommand == "play") {
         play(receivedMessage, arguments);
+
     } else if (primaryCommand == "whois") {
         processWhoIs(receivedMessage, arguments);
+
     } else if (receivedMessage.content.includes("love")) {
         processLoveRequest(receivedMessage);
 
@@ -131,24 +135,29 @@ function processCommand(receivedMessage) {
     } else if (primaryCommand == "weather") {
 
         if (arguments.length >= 1) {
-            processWeather(message, arguments.join());
+            processWeather(receivedMessage, arguments.join(" "));
+
         } else {
             receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
             `please specify **${getCurrentPrefix()} weather <city>**`);
+
         }
 
     } else if (primaryCommand == "directions") {
 
         // https://www.youtube.com/watch?v=AFmebufTce4
         processDirection(receivedMessage, arguments);
+
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
 
     } else if (primaryCommand == "wiki" || primaryCommand == "wikipedia" ||
                primaryCommand == "find" || primaryCommand == "wikime") {
-        retrieveWikiResults(receivedMessage, arguments);
+        retrieveWikiResults(receivedMessage, arguments.join(" "));
+
     } else {
         receivedMessage.channel.send(retrieveConfusedEmojis());
+
     }
 }
 
@@ -227,6 +236,7 @@ function processUpdate(receivedMessage, arguments) {
                     // permissions to be added.
                     var channel = receivedMessage.channel;
                     var currentPerm = channel.permissionOverwrites.values();
+
                     // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
                     channel.overwritePermissions([
                         {
@@ -246,8 +256,6 @@ function processUpdate(receivedMessage, arguments) {
                     `do not have Admin permissions. ` +
                     retrieveConfusedEmojis());
                 }
-                // CHECK USER HAS PERMS IF SO STATE WHY CHANGE PERMS
-                // OTHERWISE CHECK USER CHANGING PERMS/RUNNING COMMAND HAS PERMISSIONS
             } else {
                 receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
                 `permission doesn't exist, please provide a valid permission.`);
@@ -304,7 +312,7 @@ function processWhoIs(receivedMessage, arguments) {
     } else {
 
         // error Embed.
-        var embed = createErrorEmbed(arguments);
+        var embed = createErrorEmbed(arguments.join(" "), 'User');
     }
 
     // Send Embed.
@@ -316,7 +324,6 @@ function retrieveWikiResults(receivedMessage, query) {
     wiki()
     .page(query)
     .then(function(page) {
-        // console.log(page.raw);
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
         return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
     })
@@ -324,41 +331,46 @@ function retrieveWikiResults(receivedMessage, query) {
         // Format of values is the return statement above:
         // imageURL, summaryText, fullURL, title.
         var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
-        receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+        receivedMessage.channel.send(wikiEmbed);
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+        var errorEmbed = createErrorEmbed(query, "Wiki Query");
+        receivedMessage.channel.send({embed: errorEmbed});
+        console.log(err);
+    });
 }
 
 // This function will retrieve salary data from a specified job.
 function retrieveSalaryData(receivedMessage, job) {
-    var jobFormatted = job.join("-");
+    var jobFormatted = job.join(" ");
     var encodedJob = encodeURI(jobFormatted);
 
     // https://stackoverflow.com/a/42755730/14151099
     var jobString = job.map(function(word) {
-        return word[0].toUpperCase() + word.substr(1)
+        return word[0].toUpperCase() + word.substr(1);
     }).join(" ");
 
     // This may be subject to change, as indeed may break this functionality all together.
-    var indeedURL = `https://au.indeed.com/career/${encodedJob}/salaries`
+    var indeedURL = `https://api-title-webapp.indeed.com/_api/salaries/${encodedJob}?country=AU&locale=en_AU&location=&salaryType=`
     // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
     fetch(indeedURL)
-    .then(function(resp) {
-        if (resp.status != 200) {
+    .then(resp => resp.json())
+    .then(jsonResp => {
+        var salaries = jsonResp.salaries.salaries;
+        if (salaries === {}) {
             receivedMessage.channel.send(`Sorry we could not find that ` +
             `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
-            return;
+        } else {
+            var medianSalary = salaries.YEARLY.estimatedMedian;
+            var maxSalary = salaries.YEARLY.estimatedMax;
+            var minSalary = salaries.YEARLY.estimatedMin;
+            var meanSalary = salaries.YEARLY.mean;
+            var salaryEmbed = createSalaryEmbed(encodedJob, jobString,
+                medianSalary, maxSalary, minSalary, meanSalary);
+            receivedMessage.channel.send(salaryEmbed);
         }
-        return resp.text()
     })
-    .then(respText => {
-        if (respText) {
-            var salary = JSON.stringify(respText).split(" is ")[1].split(" per year in Australia.")[0]
-            receivedMessage.channel.send(`According to **Indeed**, the ` +
-            `figures suggest the average base salary for ${jobString} ` +
-            `is **${salary}**.`)
-        }
-    }).catch(err => console.log(err));
+    .catch(err => console.log(err));
 }
 
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
@@ -481,7 +493,6 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
             jsonResp.coord.lat, message);
         receivedMessage.channel.send(weatherEmbed);
     }).catch(err => console.log(err));
-
 }
 
 // This function will get a given addresses coordinates.
@@ -542,9 +553,9 @@ function createWikiEmbed(imageURL, summaryText, fullURL, title) {
         .setColor(randomColourPicker())
         .setTitle(title)
         .setURL(fullURL)
-        .setDescription(summaryText.slice(0, 256) + "...")
+        .setDescription(summaryText.slice(0, 300) + "...")
         .setImage(imageURL)
-        .setFooter("Data provided by: Wikipedia!")
+        .setFooter("Data provided by: Wikipedia!", "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg")
     return wikiEmbed;
 }
 
@@ -561,7 +572,7 @@ function createLocationsEmbed(fullAddress, polylineString) {
         .setColor(randomColourPicker())
         .setTitle(`From ${fullAddress} to UNSW!`)
         .setImage(imageURL)
-        .setFooter("Data Provided by: © 2020 Mapbox, Inc", "https://assets-global.website-files.com/5d3ef00c73102c436bc83996/5d3ef00c73102c893bc83a28_logo-regular.png")
+        .setFooter("Data Provided by: © 2020 Mapbox, Inc.", "https://assets-global.website-files.com/5d3ef00c73102c436bc83996/5d3ef00c73102c893bc83a28_logo-regular.png")
     return locationsEmbed;
 }
 
@@ -584,6 +595,29 @@ function retrieveConjunctive() {
         "with",
         "in addition to"
     ];
+}
+
+function createSalaryEmbed(encodedJob, job, medianSalary, maxSalary, minSalary,
+    meanSalary) {
+    var salaryEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(job)
+        .setURL(`https://au.indeed.com/career/${encodedJob}/salaries`)
+        .addFields(
+            {name: "**Median Salary**",
+                value: `$${medianSalary.toFixed(2)}`, inline: true},
+            {name: "**Max Salary**",
+                value: `$${maxSalary.toFixed(2)}`, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "**Min Salary**",
+                value: `$${minSalary.toFixed(2)}`, inline: true},
+            {name: "**Mean Salary**",
+                value: `$${meanSalary.toFixed(2)}`, inline: true}
+        )
+        .setTimestamp()
+        .setFooter("Data provided by: Indeed!",
+        "https://www.logolynx.com/images/logolynx/49/499d48442f2e5418dae38ca15a3a2d98.jpeg");
+    return salaryEmbed;
 }
 
 // This function will retrieve a random invalid address response.
@@ -641,11 +675,11 @@ function checkLinking(argument) {
 }
 
 // This function will create an error embed.
-function createErrorEmbed(arguments) {
+function createErrorEmbed(arguments, invalidType) {
     var errorEmbed = {
         // Color orange red.
         color: 0xff4500,
-        title: `❌ Invalid User ${arguments.join(" ")}`,
+        title: `❌ Invalid ${invalidType}: ${arguments}`,
     };
     return errorEmbed;
 }
@@ -659,7 +693,7 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
         .setTitle(`Weather for ${cityName}`)
         .setDescription(message)
         .setImage(mapboxRequestURL)
-        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc");
+        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc.");
     return weatherEmbed;
 }
 
@@ -764,7 +798,7 @@ function createMainHelpEmbed() {
             {name: "🌞 **Weather**",
                 value: `\`\`${prefix} help weather\`\``, inline: true},
             {name: "\u200B", value: "\u200B"},
-            {name: "📰 **Wikipedia**",
+            {name: "📚 **Wikipedia**",
                 value: `\`\`${prefix} help wiki\`\``, inline: true},
             {name: "🧐 **Whois**",
                 value: `\`\`${prefix} help whois\`\``, inline: true},
@@ -780,6 +814,7 @@ function helpCommand(receivedMessage, arguments) {
         // `${prefix}help [topic]`);
     } else if (arguments.length == 1) {
         var embed;
+        var prefix = getCurrentPrefix();
         switch(arguments[0]) {
             case "directions":
                 embed = new Discord.MessageEmbed()
@@ -787,28 +822,121 @@ function helpCommand(receivedMessage, arguments) {
                     .setTitle("🗺 Directions")
                     .addFields({name: "**Usage**",
                     value: `\`\`${prefix} directions from <Australian Address>\`\``, inline:true},
-                    {name: "**Examples**",
-                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta
-                    ${prefix} directions from 321 W Botany St Rockdale
-                    ${prefix} directions from 164 Campbell Parade Bondi Beach\`\`\``})
+                    {name: "**Australian Addresses**",
+                    value:  `\`\`Please use:\n` +
+                    `1. https://www.openstreetmap.org/\n` +
+                    `2. https://maps.google.com.au/\n` +
+                    `3. https://www.bing.com/maps/\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta\n` +
+                    `${prefix} directions from 321 W Botany St Rockdale\n` +
+                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``});
                 break;
             case "permissions":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🔐 Permissions")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} <update keyword> <user> <permission>\`\``, inline:true},
+                    {name: "**Update Keywords:**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Users:**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Permissions**",
+                    value: `\`\`https://discord.com/developers/docs/topics/permissions (text permissions)\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} modify @Discord#0001 CREATE INSTANT INVITE\n` +
+                    `${prefix} set 571769108131612111 VIEW CHANNEL and ADD REACTIONS\n` +
+                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``});
                 break;
             case "play":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🎥 Play")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} play <video>\`\``, inline:true},
+                    {name: "**Video:**",
+                    value:  `\`\`joker, shrek\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} play joker\n` +
+                    `${prefix} play shrek\n\`\`\``});
                 break;
             case "prefix":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🛠 Prefix")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} <update keyword> prefix <linking word> <prefix name>\`\``, inline:true},
+                    {name: "**Update Keywords:**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Linking Words:**",
+                    value:  `\`\`with, as, to\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} modify prefix as usyd\n` +
+                    `${prefix} set prefix to uws\n` +
+                    `${prefix} update prefix to uow\n` +
+                    `${prefix} change prefix to tafe\n\`\`\``});
                 break;
             case "salary":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("💰 Salary")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} salary <job>\`\``, inline:true},
+                    {name: "**Jobs:**",
+                    value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} salary support worker\n` +
+                    `${prefix} salary data scientist\n` +
+                    `${prefix} salary java developer\n` +
+                    `${prefix} salary cleaner\n\`\`\``});
                 break;
             case "weather":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🌞 Weather")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} weather <city>\`\``, inline:true},
+                    {name: "**City:**",
+                    value:  `\`\`Any city from with a populaton greater 15000 http://download.geonames.org/export/dump/cities15000.zip\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} weather sydney\n` +
+                    `${prefix} weather suva\n` +
+                    `${prefix} weather los angeles\n` +
+                    `${prefix} weather Cape Town\n\`\`\``});
                 break;
             case "wiki":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("📚 Wikipedia")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} <wiki keyword> <query>\`\``, inline:true},
+                    {name: "**Wiki Keywords:**",
+                    value:  `\`\`find, wiki, wikime, wikipedia\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} wiki New Years\n` +
+                    `${prefix} wikime tesla inc\n` +
+                    `${prefix} wikipedia George Hotz\n` +
+                    `${prefix} find Singapore\n\`\`\``});
                 break;
             case "whois":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🧐 Whois")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} whois <user>\`\``, inline:true},
+                    {name: "**Users:**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} whois 571769108131612111\n` +
+                    `${prefix} whois @Discord#0001\n` +
+                    `${prefix} whois  Discord\n\`\`\``});
                 break;
             default:
-                receivedMessage.channel.send("It looks like you need help with " +
-                arguments);
+                embed = new Discord.MessageEmbed()
+                    .setColor(0xff4500)
+                    .setTitle(`I'm not sure what you need help with. Try: ` +
+                    `${prefix} help`);
         }
         receivedMessage.channel.send(embed);
     } else {
