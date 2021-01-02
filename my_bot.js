@@ -101,10 +101,10 @@ function processCommand(receivedMessage) {
     var splitCommand = fullCommand.split(/ +/);
     var primaryCommand = splitCommand[0];
     var arguments = splitCommand.slice(1);
-    console.log(receivedMessage.content)
-    console.log("Arguments: " + arguments)
-    console.log("SplitCommand: " + splitCommand)
-    console.log("PrimaryCommand: " + primaryCommand)
+    console.log(receivedMessage.content);
+    console.log("Arguments: " + arguments);
+    console.log("SplitCommand: " + splitCommand);
+    console.log("PrimaryCommand: " + primaryCommand);
 
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
@@ -255,8 +255,6 @@ function processUpdate(receivedMessage, arguments) {
                     `do not have Admin permissions. ` +
                     retrieveConfusedEmojis());
                 }
-                // CHECK USER HAS PERMS IF SO STATE WHY CHANGE PERMS
-                // OTHERWISE CHECK USER CHANGING PERMS/RUNNING COMMAND HAS PERMISSIONS
             } else {
                 receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
                 `permission doesn't exist, please provide a valid permission.`);
@@ -340,34 +338,35 @@ function retrieveWikiResults(receivedMessage, query) {
 
 // This function will retrieve salary data from a specified job.
 function retrieveSalaryData(receivedMessage, job) {
-    var jobFormatted = job.join("-");
+    var jobFormatted = job.join(" ");
     var encodedJob = encodeURI(jobFormatted);
 
     // https://stackoverflow.com/a/42755730/14151099
     var jobString = job.map(function(word) {
-        return word[0].toUpperCase() + word.substr(1)
+        return word[0].toUpperCase() + word.substr(1);
     }).join(" ");
 
     // This may be subject to change, as indeed may break this functionality all together.
-    var indeedURL = `https://au.indeed.com/career/${encodedJob}/salaries`
+    var indeedURL = `https://api-title-webapp.indeed.com/_api/salaries/${encodedJob}?country=AU&locale=en_AU&location=&salaryType=`
     // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
     fetch(indeedURL)
-    .then(function(resp) {
-        if (resp.status != 200) {
+    .then(resp => resp.json())
+    .then(jsonResp => {
+        var salaries = jsonResp.salaries.salaries;
+        if (salaries === {}) {
             receivedMessage.channel.send(`Sorry we could not find that ` +
             `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
-            return;
+        } else {
+            var medianSalary = salaries.YEARLY.estimatedMedian;
+            var maxSalary = salaries.YEARLY.estimatedMax;
+            var minSalary = salaries.YEARLY.estimatedMin;
+            var meanSalary = salaries.YEARLY.mean;
+            var salaryEmbed = createSalaryEmbed(jobString, medianSalary,
+                maxSalary, minSalary, meanSalary);
+            receivedMessage.channel.send(salaryEmbed);
         }
-        return resp.text()
     })
-    .then(respText => {
-        if (respText) {
-            var salary = JSON.stringify(respText).split(" is ")[1].split(" per year in Australia.")[0]
-            receivedMessage.channel.send(`According to **Indeed**, the ` +
-            `figures suggest the average base salary for ${jobString} ` +
-            `is **${salary}**.`)
-        }
-    }).catch(err => console.log(err));
+    .catch(err => console.log(err));
 }
 
 // Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
@@ -593,6 +592,28 @@ function retrieveConjunctive() {
         "with",
         "in addition to"
     ];
+}
+
+function createSalaryEmbed(job, medianSalary, maxSalary, minSalary,
+    meanSalary) {
+    var salaryEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(job)
+        .setURL("indeed.com.au/")
+        .addFields(
+            {name: "**Median Salary**",
+                value: `$${Math.round(medianSalary, 2)}`, inline: true},
+            {name: "**Max Salary**",
+                value: `$${Math.round(maxSalary, 2)}`, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "**Min Salary**",
+                value: `$${Math.round(minSalary, 2)}`, inline: true},
+            {name: "**Mean Salary**",
+                value: `$${Math.round(meanSalary, 2)}`, inline: true}
+        )
+        .setTimestamp()
+        .setFooter("Data provided by: Indeed!", "https://www.logolynx.com/images/logolynx/49/499d48442f2e5418dae38ca15a3a2d98.jpeg");
+    return salaryEmbed;
 }
 
 // This function will retrieve a random invalid address response.
@@ -847,6 +868,18 @@ function helpCommand(receivedMessage, arguments) {
                     `${prefix} change prefix to tafe\n\`\`\``})
                 break;
             case "salary":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("💰 Salary")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} salary <job>\`\``, inline:true},
+                    {name: "**Jobs**",
+                    value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
+                    {name: "**Examples**",
+                    value:  `\`\`\`${prefix} salary java developer\n` +
+                    `${prefix} salary data scientist\n` +
+                    `${prefix} salary support worker\n` +
+                    `${prefix} salary cleaner\n\`\`\``})
                 break;
             case "weather":
                 break;
