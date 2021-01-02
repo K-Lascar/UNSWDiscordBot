@@ -135,7 +135,7 @@ function processCommand(receivedMessage) {
     } else if (primaryCommand == "weather") {
 
         if (arguments.length >= 1) {
-            processWeather(message, arguments.join());
+            processWeather(receivedMessage, arguments.join(" "));
 
         } else {
             receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
@@ -569,7 +569,7 @@ function createLocationsEmbed(fullAddress, polylineString) {
         .setColor(randomColourPicker())
         .setTitle(`From ${fullAddress} to UNSW!`)
         .setImage(imageURL)
-        .setFooter("Data Provided by: © 2020 Mapbox, Inc", "https://assets-global.website-files.com/5d3ef00c73102c436bc83996/5d3ef00c73102c893bc83a28_logo-regular.png")
+        .setFooter("Data Provided by: © 2020 Mapbox, Inc.", "https://assets-global.website-files.com/5d3ef00c73102c436bc83996/5d3ef00c73102c893bc83a28_logo-regular.png")
     return locationsEmbed;
 }
 
@@ -612,7 +612,8 @@ function createSalaryEmbed(encodedJob, job, medianSalary, maxSalary, minSalary,
                 value: `$${meanSalary.toFixed(2)}`, inline: true}
         )
         .setTimestamp()
-        .setFooter("Data provided by: Indeed!", "https://www.logolynx.com/images/logolynx/49/499d48442f2e5418dae38ca15a3a2d98.jpeg");
+        .setFooter("Data provided by: Indeed!",
+        "https://www.logolynx.com/images/logolynx/49/499d48442f2e5418dae38ca15a3a2d98.jpeg");
     return salaryEmbed;
 }
 
@@ -689,7 +690,7 @@ function createWeatherEmbed(cityName, longitude, latitude, message) {
         .setTitle(`Weather for ${cityName}`)
         .setDescription(message)
         .setImage(mapboxRequestURL)
-        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc");
+        .setFooter("Data Provided by: OpenWeatherMap & © 2020 Mapbox, Inc.");
     return weatherEmbed;
 }
 
@@ -876,12 +877,24 @@ function helpCommand(receivedMessage, arguments) {
                     {name: "**Jobs**",
                     value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
                     {name: "**Examples**",
-                    value:  `\`\`\`${prefix} salary java developer\n` +
+                    value:  `\`\`\`${prefix} salary support worker\n` +
                     `${prefix} salary data scientist\n` +
-                    `${prefix} salary support worker\n` +
+                    `${prefix} salary java developer\n` +
                     `${prefix} salary cleaner\n\`\`\``})
                 break;
             case "weather":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🌞 Weather")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} weather <city>\`\``, inline:true},
+                    {name: "**City**",
+                    value:  `\`\`Any city from with a populaton greater 15000 http://download.geonames.org/export/dump/cities15000.zip\n\`\``},
+                    {name: "**Examples**",
+                    value:  `\`\`\`${prefix} weather sydney\n` +
+                    `${prefix} weather suva\n` +
+                    `${prefix} weather los angeles\n` +
+                    `${prefix} weather cape town\n\`\`\``})
                 break;
             case "wiki":
                 break;
