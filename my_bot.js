@@ -109,12 +109,16 @@ function processCommand(receivedMessage) {
     if (!splitCommand.length || !primaryCommand.length) {
         var authorId = receivedMessage.author.id;
         receivedMessage.channel.send(`<@${authorId}>`);
+
     } else if (primaryCommand == "help") {
         helpCommand(receivedMessage, arguments);
+
     } else if (primaryCommand == "play") {
         play(receivedMessage, arguments);
+
     } else if (primaryCommand == "whois") {
         processWhoIs(receivedMessage, arguments);
+
     } else if (receivedMessage.content.includes("love")) {
         processLoveRequest(receivedMessage);
 
@@ -132,23 +136,28 @@ function processCommand(receivedMessage) {
 
         if (arguments.length >= 1) {
             processWeather(message, arguments.join());
+
         } else {
             receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
             `please specify **${getCurrentPrefix()} weather <city>**`);
+
         }
 
     } else if (primaryCommand == "directions") {
 
         // https://www.youtube.com/watch?v=AFmebufTce4
         processDirection(receivedMessage, arguments);
+
     } else if (primaryCommand == "salary") {
         retrieveSalaryData(receivedMessage, arguments);
 
     } else if (primaryCommand == "wiki" || primaryCommand == "wikipedia" ||
                primaryCommand == "find" || primaryCommand == "wikime") {
         retrieveWikiResults(receivedMessage, arguments);
+
     } else {
         receivedMessage.channel.send(retrieveConfusedEmojis());
+
     }
 }
 
@@ -788,15 +797,54 @@ function helpCommand(receivedMessage, arguments) {
                     .addFields({name: "**Usage**",
                     value: `\`\`${prefix} directions from <Australian Address>\`\``, inline:true},
                     {name: "**Examples**",
-                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta
-                    ${prefix} directions from 321 W Botany St Rockdale
-                    ${prefix} directions from 164 Campbell Parade Bondi Beach\`\`\``})
+                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta\n` +
+                    `${prefix} directions from 321 W Botany St Rockdale\n` +
+                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``})
                 break;
             case "permissions":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🔐 Permissions")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} <update keyword> <user> <permission>\`\``, inline:true},
+                    {name: "**Update Keywords**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Users**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Permissions**",
+                    value: `\`\`https://discord.com/developers/docs/topics/permissions (text permissions)\`\``},
+                    {name: "**Examples**",
+                    value:  `\`\`\`${prefix} modify @Discord CREATE INSTANT INVITE\n` +
+                    `${prefix} set 571769108131612111 VIEW CHANNEL and ADD REACTIONS\n` +
+                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``})
                 break;
             case "play":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🎥 Play")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} play <video>\`\``, inline:true},
+                    {name: "**Video**",
+                    value:  `\`\`joker, shrek\n\`\``},
+                    {name: "**Examples**",
+                    value:  `\`\`\`${prefix} play joker\n` +
+                    `${prefix} play shrek\n\`\`\``})
                 break;
             case "prefix":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🛠 Prefix")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} <update keyword> prefix <linking word> <prefix name>\`\``, inline:true},
+                    {name: "**Update Keywords**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Linking Words**",
+                    value:  `\`\`with, as, to\n\`\``},
+                    {name: "**Examples**",
+                    value:  `\`\`\`${prefix} modify prefix as usyd\n` +
+                    `${prefix} set prefix to uws\n` +
+                    `${prefix} update prefix to uow\n` +
+                    `${prefix} change prefix to tafe\n\`\`\``})
                 break;
             case "salary":
                 break;
