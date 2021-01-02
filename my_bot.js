@@ -153,7 +153,7 @@ function processCommand(receivedMessage) {
 
     } else if (primaryCommand == "wiki" || primaryCommand == "wikipedia" ||
                primaryCommand == "find" || primaryCommand == "wikime") {
-        retrieveWikiResults(receivedMessage, arguments);
+        retrieveWikiResults(receivedMessage, arguments.join(" "));
 
     } else {
         receivedMessage.channel.send(retrieveConfusedEmojis());
@@ -236,6 +236,7 @@ function processUpdate(receivedMessage, arguments) {
                     // permissions to be added.
                     var channel = receivedMessage.channel;
                     var currentPerm = channel.permissionOverwrites.values();
+
                     // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
                     channel.overwritePermissions([
                         {
@@ -311,7 +312,7 @@ function processWhoIs(receivedMessage, arguments) {
     } else {
 
         // error Embed.
-        var embed = createErrorEmbed(arguments);
+        var embed = createErrorEmbed(arguments.join(" "), 'User');
     }
 
     // Send Embed.
@@ -323,7 +324,6 @@ function retrieveWikiResults(receivedMessage, query) {
     wiki()
     .page(query)
     .then(function(page) {
-        // console.log(page.raw);
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
         return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
     })
@@ -331,9 +331,13 @@ function retrieveWikiResults(receivedMessage, query) {
         // Format of values is the return statement above:
         // imageURL, summaryText, fullURL, title.
         var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
-        receivedMessage.channel.send(wikiEmbed, "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg");
+        receivedMessage.channel.send(wikiEmbed);
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+        var errorEmbed = createErrorEmbed(query, "Wiki Query");
+        receivedMessage.channel.send({embed: errorEmbed});
+        console.log(err);
+    });
 }
 
 // This function will retrieve salary data from a specified job.
@@ -489,7 +493,6 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
             jsonResp.coord.lat, message);
         receivedMessage.channel.send(weatherEmbed);
     }).catch(err => console.log(err));
-
 }
 
 // This function will get a given addresses coordinates.
@@ -550,9 +553,9 @@ function createWikiEmbed(imageURL, summaryText, fullURL, title) {
         .setColor(randomColourPicker())
         .setTitle(title)
         .setURL(fullURL)
-        .setDescription(summaryText.slice(0, 256) + "...")
+        .setDescription(summaryText.slice(0, 300) + "...")
         .setImage(imageURL)
-        .setFooter("Data provided by: Wikipedia!")
+        .setFooter("Data provided by: Wikipedia!", "https://upload.wikimedia.org/wikipedia/commons/f/ff/Wikipedia_logo_593.jpg")
     return wikiEmbed;
 }
 
@@ -672,11 +675,11 @@ function checkLinking(argument) {
 }
 
 // This function will create an error embed.
-function createErrorEmbed(arguments) {
+function createErrorEmbed(arguments, invalidType) {
     var errorEmbed = {
         // Color orange red.
         color: 0xff4500,
-        title: `❌ Invalid User ${arguments.join(" ")}`,
+        title: `❌ Invalid ${invalidType}: ${arguments}`,
     };
     return errorEmbed;
 }
@@ -795,7 +798,7 @@ function createMainHelpEmbed() {
             {name: "🌞 **Weather**",
                 value: `\`\`${prefix} help weather\`\``, inline: true},
             {name: "\u200B", value: "\u200B"},
-            {name: "📰 **Wikipedia**",
+            {name: "📚 **Wikipedia**",
                 value: `\`\`${prefix} help wiki\`\``, inline: true},
             {name: "🧐 **Whois**",
                 value: `\`\`${prefix} help whois\`\``, inline: true},
@@ -811,6 +814,7 @@ function helpCommand(receivedMessage, arguments) {
         // `${prefix}help [topic]`);
     } else if (arguments.length == 1) {
         var embed;
+        var prefix = getCurrentPrefix();
         switch(arguments[0]) {
             case "directions":
                 embed = new Discord.MessageEmbed()
@@ -818,10 +822,15 @@ function helpCommand(receivedMessage, arguments) {
                     .setTitle("🗺 Directions")
                     .addFields({name: "**Usage**",
                     value: `\`\`${prefix} directions from <Australian Address>\`\``, inline:true},
-                    {name: "**Examples**",
+                    {name: "**Australian Addresses**",
+                    value:  `\`\`Please use:\n` +
+                    `1. https://www.openstreetmap.org/\n` +
+                    `2. https://maps.google.com.au/\n` +
+                    `3. https://www.bing.com/maps/\n\`\``},
+                    {name: "**Examples:**",
                     value:  `\`\`\`${prefix} directions from 159 Church St Paramatta\n` +
                     `${prefix} directions from 321 W Botany St Rockdale\n` +
-                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``})
+                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``});
                 break;
             case "permissions":
                 embed = new Discord.MessageEmbed()
@@ -829,80 +838,105 @@ function helpCommand(receivedMessage, arguments) {
                     .setTitle("🔐 Permissions")
                     .addFields({name: "**Usage**",
                     value: `\`\`${prefix} <update keyword> <user> <permission>\`\``, inline:true},
-                    {name: "**Update Keywords**",
+                    {name: "**Update Keywords:**",
                     value:  `\`\`change, update, modify, set\n\`\``},
-                    {name: "**Users**",
+                    {name: "**Users:**",
                     value:  `\`\`userID, username (or substring), @mention\n\`\``},
                     {name: "**Permissions**",
                     value: `\`\`https://discord.com/developers/docs/topics/permissions (text permissions)\`\``},
-                    {name: "**Examples**",
-                    value:  `\`\`\`${prefix} modify @Discord CREATE INSTANT INVITE\n` +
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} modify @Discord#0001 CREATE INSTANT INVITE\n` +
                     `${prefix} set 571769108131612111 VIEW CHANNEL and ADD REACTIONS\n` +
-                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``})
+                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``});
                 break;
             case "play":
                 embed = new Discord.MessageEmbed()
                     .setColor(randomColourPicker())
                     .setTitle("🎥 Play")
-                    .addFields({name: "**Usage**",
+                    .addFields({name: "**Usage:**",
                     value: `\`\`${prefix} play <video>\`\``, inline:true},
-                    {name: "**Video**",
+                    {name: "**Video:**",
                     value:  `\`\`joker, shrek\n\`\``},
-                    {name: "**Examples**",
+                    {name: "**Examples:**",
                     value:  `\`\`\`${prefix} play joker\n` +
-                    `${prefix} play shrek\n\`\`\``})
+                    `${prefix} play shrek\n\`\`\``});
                 break;
             case "prefix":
                 embed = new Discord.MessageEmbed()
                     .setColor(randomColourPicker())
                     .setTitle("🛠 Prefix")
-                    .addFields({name: "**Usage**",
+                    .addFields({name: "**Usage:**",
                     value: `\`\`${prefix} <update keyword> prefix <linking word> <prefix name>\`\``, inline:true},
-                    {name: "**Update Keywords**",
+                    {name: "**Update Keywords:**",
                     value:  `\`\`change, update, modify, set\n\`\``},
-                    {name: "**Linking Words**",
+                    {name: "**Linking Words:**",
                     value:  `\`\`with, as, to\n\`\``},
-                    {name: "**Examples**",
+                    {name: "**Examples:**",
                     value:  `\`\`\`${prefix} modify prefix as usyd\n` +
                     `${prefix} set prefix to uws\n` +
                     `${prefix} update prefix to uow\n` +
-                    `${prefix} change prefix to tafe\n\`\`\``})
+                    `${prefix} change prefix to tafe\n\`\`\``});
                 break;
             case "salary":
                 embed = new Discord.MessageEmbed()
                     .setColor(randomColourPicker())
                     .setTitle("💰 Salary")
-                    .addFields({name: "**Usage**",
+                    .addFields({name: "**Usage:**",
                     value: `\`\`${prefix} salary <job>\`\``, inline:true},
-                    {name: "**Jobs**",
+                    {name: "**Jobs:**",
                     value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
-                    {name: "**Examples**",
+                    {name: "**Examples:**",
                     value:  `\`\`\`${prefix} salary support worker\n` +
                     `${prefix} salary data scientist\n` +
                     `${prefix} salary java developer\n` +
-                    `${prefix} salary cleaner\n\`\`\``})
+                    `${prefix} salary cleaner\n\`\`\``});
                 break;
             case "weather":
                 embed = new Discord.MessageEmbed()
                     .setColor(randomColourPicker())
                     .setTitle("🌞 Weather")
-                    .addFields({name: "**Usage**",
+                    .addFields({name: "**Usage:**",
                     value: `\`\`${prefix} weather <city>\`\``, inline:true},
-                    {name: "**City**",
+                    {name: "**City:**",
                     value:  `\`\`Any city from with a populaton greater 15000 http://download.geonames.org/export/dump/cities15000.zip\n\`\``},
-                    {name: "**Examples**",
+                    {name: "**Examples:**",
                     value:  `\`\`\`${prefix} weather sydney\n` +
                     `${prefix} weather suva\n` +
                     `${prefix} weather los angeles\n` +
-                    `${prefix} weather cape town\n\`\`\``})
+                    `${prefix} weather Cape Town\n\`\`\``});
                 break;
             case "wiki":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("📚 Wikipedia")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} <wiki keyword> <query>\`\``, inline:true},
+                    {name: "**Wiki Keywords:**",
+                    value:  `\`\`find, wiki, wikime, wikipedia\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} wiki New Years\n` +
+                    `${prefix} wikime tesla inc\n` +
+                    `${prefix} wikipedia George Hotz\n` +
+                    `${prefix} find Singapore\n\`\`\``});
                 break;
             case "whois":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🧐 Whois")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} whois <user>\`\``, inline:true},
+                    {name: "**Users:**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} whois 571769108131612111\n` +
+                    `${prefix} whois @Discord#0001\n` +
+                    `${prefix} whois  Discord\n\`\`\``});
                 break;
             default:
-                receivedMessage.channel.send("It looks like you need help with " +
-                arguments);
+                embed = new Discord.MessageEmbed()
+                    .setColor(0xff4500)
+                    .setTitle(`I'm not sure what you need help with. Try: ` +
+                    `${prefix} help`);
         }
         receivedMessage.channel.send(embed);
     } else {
