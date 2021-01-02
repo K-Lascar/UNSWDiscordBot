@@ -302,6 +302,7 @@ function processWhoIs(receivedMessage, arguments) {
     // We check for all the possible queries (userID, user nickname and
     // if mentioned). Then we create a response as a result.
     var user = retrieveMentionUser(receivedMessage, arguments, 0);
+    console.log(user);
     if (user) {
         // Retrieve user object and from their we can find the member object.
         // Which we can then pass into the createWhoIsEmbed.
@@ -751,9 +752,22 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
 // identified (retrieved by an ID) or the start of a given user's name is
 // specified.
 function retrieveMentionUser(receivedMessage, arguments, index) {
+    // https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/frequently-asked-questions.md
     var isMentioned = receivedMessage.mentions.users.first();
-    var isIdentified = client.users.cache.get(arguments[index]);
+    // https://stackoverflow.com/a/60783168/14151099
+    // https://github.com/discordjs/discord.js/issues/4964
+    var isIdentified = receivedMessage.guild.members.fetch(arguments[index])
+                        .then(guildMember => {
+                            console.log(guildMember.user);
+                            return guildMember.user;
+                        });
+    console.log(isIdentified);
+    isIdentified = 0;
+    // var isIdentified = receivedMessage.guild.members.cache.get(arguments[index]);
     var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[index]));
+    // var isSelected = receivedMessage.guild.members.fetch()
+    //                         .then(value => console.log(value));
+    // console.log(isMentioned || isIdentified || isSelected)
     return isMentioned || isIdentified || isSelected;
 }
 
