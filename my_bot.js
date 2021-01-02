@@ -361,8 +361,8 @@ function retrieveSalaryData(receivedMessage, job) {
             var maxSalary = salaries.YEARLY.estimatedMax;
             var minSalary = salaries.YEARLY.estimatedMin;
             var meanSalary = salaries.YEARLY.mean;
-            var salaryEmbed = createSalaryEmbed(jobString, medianSalary,
-                maxSalary, minSalary, meanSalary);
+            var salaryEmbed = createSalaryEmbed(encodedJob, jobString,
+                medianSalary, maxSalary, minSalary, meanSalary);
             receivedMessage.channel.send(salaryEmbed);
         }
     })
@@ -594,22 +594,22 @@ function retrieveConjunctive() {
     ];
 }
 
-function createSalaryEmbed(job, medianSalary, maxSalary, minSalary,
+function createSalaryEmbed(encodedJob, job, medianSalary, maxSalary, minSalary,
     meanSalary) {
     var salaryEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
         .setTitle(job)
-        .setURL("indeed.com.au/")
+        .setURL(`https://au.indeed.com/career/${encodedJob}/salaries`)
         .addFields(
             {name: "**Median Salary**",
-                value: `$${Math.round(medianSalary, 2)}`, inline: true},
+                value: `$${medianSalary.toFixed(2)}`, inline: true},
             {name: "**Max Salary**",
-                value: `$${Math.round(maxSalary, 2)}`, inline: true},
+                value: `$${maxSalary.toFixed(2)}`, inline: true},
             {name: "\u200B", value: "\u200B"},
             {name: "**Min Salary**",
-                value: `$${Math.round(minSalary, 2)}`, inline: true},
+                value: `$${minSalary.toFixed(2)}`, inline: true},
             {name: "**Mean Salary**",
-                value: `$${Math.round(meanSalary, 2)}`, inline: true}
+                value: `$${meanSalary.toFixed(2)}`, inline: true}
         )
         .setTimestamp()
         .setFooter("Data provided by: Indeed!", "https://www.logolynx.com/images/logolynx/49/499d48442f2e5418dae38ca15a3a2d98.jpeg");
