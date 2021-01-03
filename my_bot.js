@@ -35,15 +35,15 @@ client.on("ready", () =>{
                 flag = false;
             }
         })
-    })
 
-    // Add cool loading animation to main channel.
-    let generalChannel = client.channels.cache.get(mainChannelID)
-    const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
-    generalChannel.send(attachment)
-    .then(msg => {
-        msg.delete({timeout: 8000})
-    }).catch(err => console.log(err));
+        // Add cool loading animation to main channel.
+        let generalChannel = client.channels.cache.get(mainChannelID)
+        const attachment = new Discord.MessageAttachment("https://gifimage.net/wp-content/uploads/2017/10/cool-loading-animation-gif-4.gif")
+        generalChannel.send(attachment)
+        .then(msg => {
+            msg.delete({timeout: 8000})
+        }).catch(err => console.log(err));
+    })
 })
 
 // When the bot receives a message it will execute this.
@@ -161,117 +161,218 @@ function processCommand(receivedMessage) {
     }
 }
 
-// This function will process directions, if a user provides
-// a valid address, it will parse the address provided into the
-// getAddressCoords function, which will eventually send an embed
-// to the user of the directions.
-function processDirection(receivedMessage, arguments) {
-    if (arguments[0] == "from") {
-        var addressSliced = arguments.slice(1);
-        getAddressCoords(receivedMessage, addressSliced.join(" "));
+// Inspired by: https://dankmemer.lol/
+function createMainHelpEmbed() {
+    var prefix = getCurrentPrefix();
+    var helpEmbed = new Discord.MessageEmbed()
+        .setColor(randomColourPicker())
+        .setTitle(`**UNSW ChatBot's Command List**`)
+        .addFields(
+            {name: "🗺 **Directions**",
+                value: `\`\`${prefix} help directions\`\``, inline: true},
+            {name: "🔐 **Permissions**",
+                value: `\`\`${prefix} help permissions\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "🎥 **Play**",
+                value: `\`\`${prefix} help play\`\``, inline: true},
+            {name: "🛠 **Prefix**",
+                value: `\`\`${prefix} help prefix\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "💰 **Salary**",
+                value: `\`\`${prefix} help salary\`\``, inline: true},
+            {name: "🌞 **Weather**",
+                value: `\`\`${prefix} help weather\`\``, inline: true},
+            {name: "\u200B", value: "\u200B"},
+            {name: "📚 **Wikipedia**",
+                value: `\`\`${prefix} help wiki\`\``, inline: true},
+            {name: "🧐 **Whois**",
+                value: `\`\`${prefix} help whois\`\``, inline: true},
+        )
+        .setTimestamp()
+    return helpEmbed;
+}
+
+function helpCommand(receivedMessage, arguments) {
+    if (arguments.length == 0) {
+        receivedMessage.channel.send(createMainHelpEmbed());
+        // receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
+        // `${prefix}help [topic]`);
+    } else if (arguments.length == 1) {
+        var embed;
+        var prefix = getCurrentPrefix();
+        switch(arguments[0]) {
+            case "directions":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🗺 Directions")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} directions from <Australian Address>\`\``, inline:true},
+                    {name: "**Australian Addresses**",
+                    value:  `\`\`Please use:\n` +
+                    `1. https://www.openstreetmap.org/\n` +
+                    `2. https://maps.google.com.au/\n` +
+                    `3. https://www.bing.com/maps/\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta\n` +
+                    `${prefix} directions from 321 W Botany St Rockdale\n` +
+                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``});
+                break;
+            case "permissions":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🔐 Permissions")
+                    .addFields({name: "**Usage**",
+                    value: `\`\`${prefix} <update keyword> <user> <permission>\`\``, inline:true},
+                    {name: "**Update Keywords:**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Users:**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Permissions**",
+                    value: `\`\`https://discord.com/developers/docs/topics/permissions (text permissions)\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} modify @Discord#0001 CREATE INSTANT INVITE\n` +
+                    `${prefix} set 571769108131612111 VIEW CHANNEL and ADD REACTIONS\n` +
+                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``});
+                break;
+            case "play":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🎥 Play")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} play <video>\`\``, inline:true},
+                    {name: "**Video:**",
+                    value:  `\`\`joker, shrek\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} play joker\n` +
+                    `${prefix} play shrek\n\`\`\``});
+                break;
+            case "prefix":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🛠 Prefix")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} <update keyword> prefix <linking word> <prefix name>\`\``, inline:true},
+                    {name: "**Update Keywords:**",
+                    value:  `\`\`change, update, modify, set\n\`\``},
+                    {name: "**Linking Words:**",
+                    value:  `\`\`with, as, to\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} modify prefix as usyd\n` +
+                    `${prefix} set prefix to uws\n` +
+                    `${prefix} update prefix to uow\n` +
+                    `${prefix} change prefix to tafe\n\`\`\``});
+                break;
+            case "salary":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("💰 Salary")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} salary <job>\`\``, inline:true},
+                    {name: "**Jobs:**",
+                    value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} salary support worker\n` +
+                    `${prefix} salary data scientist\n` +
+                    `${prefix} salary java developer\n` +
+                    `${prefix} salary cleaner\n\`\`\``});
+                break;
+            case "weather":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🌞 Weather")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} weather <city>\`\``, inline:true},
+                    {name: "**City:**",
+                    value:  `\`\`Any city with a populaton greater 15000 http://download.geonames.org/export/dump/cities15000.zip\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} weather sydney\n` +
+                    `${prefix} weather Suva\n` +
+                    `${prefix} weather los angeles\n` +
+                    `${prefix} weather Cape Town\n\`\`\``});
+                break;
+            case "wiki":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("📚 Wikipedia")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} <wiki keyword> <query>\`\``, inline:true},
+                    {name: "**Wiki Keywords:**",
+                    value:  `\`\`find, wiki, wikime, wikipedia\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} wikipedia George Hotz\n` +
+                    `${prefix} wikime tesla inc\n` +
+                    `${prefix} wiki New Years\n` +
+                    `${prefix} find Singapore\n\`\`\``});
+                break;
+            case "whois":
+                embed = new Discord.MessageEmbed()
+                    .setColor(randomColourPicker())
+                    .setTitle("🧐 Whois")
+                    .addFields({name: "**Usage:**",
+                    value: `\`\`${prefix} whois <user>\`\``, inline:true},
+                    {name: "**Users:**",
+                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
+                    {name: "**Examples:**",
+                    value:  `\`\`\`${prefix} whois 571769108131612111\n` +
+                    `${prefix} whois @Discord#0001\n` +
+                    `${prefix} whois Discord\n\`\`\``});
+                break;
+            default:
+                embed = new Discord.MessageEmbed()
+                    .setColor(0xff4500)
+                    .setTitle(`I'm not sure what you need help with. Try: ` +
+                    `${prefix} help`);
+        }
+        receivedMessage.channel.send(embed);
     } else {
-        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
-        `please specify **${getCurrentPrefix()} directions from <Address>**`)
+        receivedMessage.channel.send("It looks like you've specified to many " +
+        "arguments");
     }
 }
 
-// This function will update either the prefix or the permissions for a specific
-// user in the given channel.
-function processUpdate(receivedMessage, arguments) {
-    var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
-    if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
-
-        // First check if the prefix parsed is the same as the prefix given.
-        // Secondly check if they admin permissions to change it.
-        // If all else fails, send error message that user doesn't have
-        // permissions.
-        if (getCurrentPrefix() == arguments[2]) {
-            receivedMessage.channel.send(`The prefix is the same as the `+
-            `current prefix. ` + retrieveConfusedEmojis());
-        } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
-            updatePrefix(arguments[2]);
-            receivedMessage.channel.send(`Prefix successfully updated to ` +
-            `**${arguments[2]}** 🥳`);
-
-        } else {
-            var authorId = receivedMessage.author.id;
-            receivedMessage.channel.send(`Sorry <@${authorId}> you do not ` +
-            `have Admin permissions. ` + retrieveConfusedEmojis());
+// This function will play a given movie (joker or shrek).
+function play(receivedMessage, arguments) {
+    if (arguments[0] == "movie") {
+        if (arguments[1] == "joker") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793723640495079444/Joker.webm")
+        } else if (arguments[1] == "shrek") {
+            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793722980340727838/Shrek.webm")
         }
-    } else if (userExists && checkLinking(arguments[1])) {
+    } else {
+        var authorId = receivedMessage.author.id;
+        receivedMessage.channel.send(`Oh no! We could not find that video ` +
+        `<@${authorId}>. 😢`)
+    }
+}
 
-        // This will slice all the permissions from index 2 onwards.
-        // Then retrieve every unique permission from the message.
-        // If an Admin was to specify that userA would like to have permissionA
-        // and permissionB then we split it based on this.
+// This function will process a whoIs, identifying the user's details (username,
+// date joined, date created and profile).
+async function processWhoIs(receivedMessage, arguments) {
 
-        // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
-        var permissionSliced = arguments.slice(2).join(" ");
-        permissionSliced = permissionSliced.split(new
-            RegExp(`${retrieveConjunctive().join("|")}`));
 
-        // https://stackoverflow.com/a/46294003
-        // https://reactgo.com/javascript-variable-regex/
-        permissionSliced.map(function(permission) {
-            var author = receivedMessage.author;
-            var authorId = author.id;
+    // We check for all the possible queries (userID, user nickname and
+    // if mentioned). Then we create a response as a result.
 
-            if (checkPermissionsExist(permission)) {
+    var user = await retrieveMentionUser(receivedMessage, arguments, 0);
+    if (~~user) {
+        // Retrieve user object and from their we can find the member object.
+        // Which we can then pass into the createWhoIsEmbed.
 
-                permission = permission.split(" ").join("_");
-
-                // We initially check if the user has the permissions specified.
-                // Otherwise we check if the user is administrator and change
-                // the specified user's permissions. If all else fails, we send
-                // a response, stating the user doesn't have administrator
-                // permissions.
-
-                // https://stackoverflow.com/a/60642417/14151099
-                if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
-                    receivedMessage.channel.send(`**${userExists.username}** ` +
-                    `already has this permission. ` + retrieveConfusedEmojis());
-                } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
-
-                    // Add requested user permissions to be added as well as old
-                    // permissions to be added.
-                    var channel = receivedMessage.channel;
-                    var currentPerm = channel.permissionOverwrites.values();
-
-                    // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
-                    channel.overwritePermissions([
-                        {
-                            id: userExists.id,
-                            allow: [permission],
-                        },
-                    ].concat(Array.from(currentPerm)))
-                    .catch(err => console.log(err));
-
-                    var readablePerm = permission.split("_").join(" ");
-                    receivedMessage.channel.send(`Granted **${readablePerm}**` +
-                    ` to ${userExists.username}! 😁`)
-                } else {
-
-                    // Unauthorised Response.
-                    receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
-                    `do not have Admin permissions. ` +
-                    retrieveConfusedEmojis());
-                }
-            } else {
-                receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
-                `permission doesn't exist, please provide a valid permission.`);
-            }
-        })
+        var userDetails = client.users.cache.get(user.id);
+        var member = receivedMessage.guild.member(userDetails);
+        var embed = createWhoIsEmbed(member, user, userDetails);
     } else {
 
-        // Invalid Update Command.
-        receivedMessage.channel.send(`What kind of update did you mean? ` +
-        retrieveConfusedEmojis());
+        // error Embed.
+        var embed = createErrorEmbed(arguments.join(" "), 'User');
     }
+
+    // Send Embed.
+    receivedMessage.channel.send({embed: embed});
 }
 
 // This function will process a love request. If a user specifies their
 // message will receive reaction.
-
 function processLoveRequest(receivedMessage) {
 
     // We initially check if someone specifies a message that is antithetical
@@ -294,90 +395,101 @@ function processLoveRequest(receivedMessage) {
     }
 }
 
-// This function will process a whoIs, identifying the user's details (username,
-// date joined, date created and profile).
-function processWhoIs(receivedMessage, arguments) {
+// This function will update either the prefix or the permissions for a specific
+// user in the given channel.
+async function processUpdate(receivedMessage, arguments) {
+    var userExists = await retrieveMentionUser(receivedMessage, arguments, 0);
+    if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
+        // First check if the prefix parsed is the same as the prefix given.
+        // Secondly check if they admin permissions to change it.
+        // If all else fails, send error message that user doesn't have
+        // permissions.
+        if (getCurrentPrefix() == arguments[2]) {
+            receivedMessage.channel.send(`The prefix is the same as the `+
+            `current prefix. ` + retrieveConfusedEmojis());
+        } else if (receivedMessage.guild.member(receivedMessage.author).hasPermission("ADMINISTRATOR")) {
+            updatePrefix(arguments[2]);
+            receivedMessage.channel.send(`Prefix successfully updated to ` +
+            `**${arguments[2]}** 🥳`);
 
-    // We check for all the possible queries (userID, user nickname and
-    // if mentioned). Then we create a response as a result.
-    var user = retrieveMentionUser(receivedMessage, arguments, 0);
-    console.log(user);
-    if (user) {
-        // Retrieve user object and from their we can find the member object.
-        // Which we can then pass into the createWhoIsEmbed.
+        } else {
+            var authorId = receivedMessage.author.id;
+            receivedMessage.channel.send(`Sorry <@${authorId}> you do not ` +
+            `have Admin permissions. ` + retrieveConfusedEmojis());
+        }
+    } else if (~~userExists && checkLinking(arguments[1])) {
+        processPermissions(arguments, receivedMessage, userExists);
 
-        var userDetails = client.users.cache.get(user.id);
-        var member = receivedMessage.guild.member(userDetails);
-        var embed = createWhoIsEmbed(member, user, userDetails);
     } else {
 
-        // error Embed.
-        var embed = createErrorEmbed(arguments.join(" "), 'User');
+        // Invalid Update Command.
+        receivedMessage.channel.send(`What kind of update did you mean? ` +
+        retrieveConfusedEmojis());
     }
-
-    // Send Embed.
-    receivedMessage.channel.send({embed: embed});
 }
 
-// This function will query on Wikipedia and return a given embed for the query.
-function retrieveWikiResults(receivedMessage, query) {
-    wiki()
-    .page(query)
-    .then(function(page) {
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
-        return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
-    })
-    .then(values => {
-        // Format of values is the return statement above:
-        // imageURL, summaryText, fullURL, title.
-        var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
-        receivedMessage.channel.send(wikiEmbed);
-    })
-    .catch(err => {
-        var errorEmbed = createErrorEmbed(query, "Wiki Query");
-        receivedMessage.channel.send({embed: errorEmbed});
-        console.log(err);
-    });
-}
+function processPermissions(arguments, receivedMessage, userExists) {
+    // This will slice all the permissions from index 2 onwards.
+    // Then retrieve every unique permission from the message.
+    // If an Admin was to specify that userA would like to have permissionA
+    // and permissionB then we split it based on this.
 
-// This function will retrieve salary data from a specified job.
-function retrieveSalaryData(receivedMessage, job) {
-    var jobFormatted = job.join(" ");
-    var encodedJob = encodeURI(jobFormatted);
+    // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
+    var permissionSliced = arguments.slice(2).join(" ");
+    permissionSliced = permissionSliced.split(new
+        RegExp(`${retrieveConjunctive().join("|")}`));
 
-    // https://stackoverflow.com/a/42755730/14151099
-    var jobString = job.map(function(word) {
-        return word[0].toUpperCase() + word.substr(1);
-    }).join(" ");
+    // https://stackoverflow.com/a/46294003
+    // https://reactgo.com/javascript-variable-regex/
+    permissionSliced.map(function(permission) {
+        var author = receivedMessage.author;
+        var authorId = author.id;
 
-    // This may be subject to change, as indeed may break this functionality all together.
-    var indeedURL = `https://api-title-webapp.indeed.com/_api/salaries/${encodedJob}?country=AU&locale=en_AU&location=&salaryType=`
-    // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
-    fetch(indeedURL)
-    .then(resp => resp.json())
-    .then(jsonResp => {
-        var salaries = jsonResp.salaries.salaries;
-        if (salaries === {}) {
-            receivedMessage.channel.send(`Sorry we could not find that ` +
-            `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
+        if (checkPermissionsExist(permission)) {
+
+            permission = permission.split(" ").join("_");
+
+            // We initially check if the user has the permissions specified.
+            // Otherwise we check if the user is administrator and change
+            // the specified user's permissions. If all else fails, we send
+            // a response, stating the user doesn't have administrator
+            // permissions.
+
+            // https://stackoverflow.com/a/60642417/14151099
+            if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
+                receivedMessage.channel.send(`**${userExists.username}** ` +
+                `already has this permission. ` + retrieveConfusedEmojis());
+            } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
+
+                // Add requested user permissions to be added as well as old
+                // permissions to be added.
+                var channel = receivedMessage.channel;
+                var currentPerm = channel.permissionOverwrites.values();
+                // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
+                channel.overwritePermissions([
+                    {
+                        id: userExists.id,
+                        allow: [permission],
+                    },
+                ].concat(Array.from(currentPerm)))
+                .catch(err => console.log(err));
+
+                var readablePerm = permission.split("_").join(" ");
+                receivedMessage.channel.send(`Granted **${readablePerm}**` +
+                ` to ${userExists.username}! 😁`)
+            } else {
+
+                // Unauthorised Response.
+                receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
+                `do not have Admin permissions. ` +
+                retrieveConfusedEmojis());
+            }
         } else {
-            var medianSalary = salaries.YEARLY.estimatedMedian;
-            var maxSalary = salaries.YEARLY.estimatedMax;
-            var minSalary = salaries.YEARLY.estimatedMin;
-            var meanSalary = salaries.YEARLY.mean;
-            var salaryEmbed = createSalaryEmbed(encodedJob, jobString,
-                medianSalary, maxSalary, minSalary, meanSalary);
-            receivedMessage.channel.send(salaryEmbed);
+            receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
+            `permission doesn't exist, please provide a valid permission.`);
         }
     })
-    .catch(err => console.log(err));
-}
-
-// Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
-function retrieveConfusedEmojis() {
-    return ["😮", "🙁", "😕", "😧", "😢", "😞", "🤔",
-            "🤨"][Math.floor(Math.random() * 8)];
 }
 
 // This function will process the weather, by checking the city is valid and
@@ -494,6 +606,80 @@ function getWeather(argumentsJoined, receivedMessage, cityName) {
             jsonResp.coord.lat, message);
         receivedMessage.channel.send(weatherEmbed);
     }).catch(err => console.log(err));
+}
+
+// This function will process directions, if a user provides
+// a valid address, it will parse the address provided into the
+// getAddressCoords function, which will eventually send an embed
+// to the user of the directions.
+function processDirection(receivedMessage, arguments) {
+    if (arguments[0] == "from") {
+        var addressSliced = arguments.slice(1);
+        getAddressCoords(receivedMessage, addressSliced.join(" "));
+    } else {
+        receivedMessage.channel.send(`Sorry ${retrieveConfusedEmojis()} ` +
+        `please specify **${getCurrentPrefix()} directions from <Address>**`)
+    }
+}
+
+// This function will retrieve salary data from a specified job.
+function retrieveSalaryData(receivedMessage, job) {
+    var jobFormatted = job.join(" ");
+    var encodedJob = encodeURI(jobFormatted);
+
+    // https://stackoverflow.com/a/42755730/14151099
+    var jobString = job.map(function(word) {
+        return word[0].toUpperCase() + word.substr(1);
+    }).join(" ");
+
+    // This may be subject to change, as indeed may break this functionality all together.
+    var indeedURL = `https://api-title-webapp.indeed.com/_api/salaries/${encodedJob}?country=AU&locale=en_AU&location=&salaryType=`
+    // https://github.com/node-fetch/node-fetch/issues/471#issuecomment-396000750
+    fetch(indeedURL)
+    .then(resp => resp.json())
+    .then(jsonResp => {
+        var salaries = jsonResp.salaries.salaries;
+        if (salaries === {}) {
+            receivedMessage.channel.send(`Sorry we could not find that ` +
+            `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
+        } else {
+            var medianSalary = salaries.YEARLY.estimatedMedian;
+            var maxSalary = salaries.YEARLY.estimatedMax;
+            var minSalary = salaries.YEARLY.estimatedMin;
+            var meanSalary = salaries.YEARLY.mean;
+            var salaryEmbed = createSalaryEmbed(encodedJob, jobString,
+                medianSalary, maxSalary, minSalary, meanSalary);
+            receivedMessage.channel.send(salaryEmbed);
+        }
+    })
+    .catch(err => console.log(err));
+}
+
+// This function will query on Wikipedia and return a given embed for the query.
+function retrieveWikiResults(receivedMessage, query) {
+    wiki()
+    .page(query)
+    .then(function(page) {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+        return Promise.all([page.mainImage(), page.summary()].concat([page.raw.fullurl, page.raw.title]))
+    })
+    .then(values => {
+        // Format of values is the return statement above:
+        // imageURL, summaryText, fullURL, title.
+        var wikiEmbed = createWikiEmbed(values[0], values[1], values[2], values[3]);
+        receivedMessage.channel.send(wikiEmbed);
+    })
+    .catch(err => {
+        var errorEmbed = createErrorEmbed(query, "Wiki Query");
+        receivedMessage.channel.send({embed: errorEmbed});
+        console.log(err);
+    });
+}
+
+// Emojis provided using: https://unicode.org/emoji/charts/full-emoji-list.html
+function retrieveConfusedEmojis() {
+    return ["😮", "🙁", "😕", "😧", "😢", "😞", "🤔",
+            "🤨"][Math.floor(Math.random() * 8)];
 }
 
 // This function will get a given addresses coordinates.
@@ -751,24 +937,42 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
 // This function will retrieve a user, checking either it was mentioned,
 // identified (retrieved by an ID) or the start of a given user's name is
 // specified.
+
+// https://stackoverflow.com/a/60783168/14151099
+// https://github.com/discordjs/discord.js/issues/4964
 function retrieveMentionUser(receivedMessage, arguments, index) {
-    // https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/frequently-asked-questions.md
-    var isMentioned = receivedMessage.mentions.users.first();
-    // https://stackoverflow.com/a/60783168/14151099
-    // https://github.com/discordjs/discord.js/issues/4964
-    var isIdentified = receivedMessage.guild.members.fetch(arguments[index])
-                        .then(guildMember => {
-                            console.log(guildMember.user);
-                            return guildMember.user;
-                        });
-    console.log(isIdentified);
-    isIdentified = 0;
-    // var isIdentified = receivedMessage.guild.members.cache.get(arguments[index]);
-    var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[index]));
-    // var isSelected = receivedMessage.guild.members.fetch()
-    //                         .then(value => console.log(value));
-    // console.log(isMentioned || isIdentified || isSelected)
-    return isMentioned || isIdentified || isSelected;
+    var argumentsList = arguments;
+    var term = argumentsList[index];
+    return new Promise(async function(resolve) {
+        var isMentioned = receivedMessage.mentions.users.first();
+
+        // https://stackoverflow.com/a/64559391/14151099
+        var indexPrefix = 0;
+        var isSearched = await receivedMessage.guild.members.fetch()
+            .then(guildMember => guildMember.map(function(value) {
+                if (value.user.username.startsWith(term)) {
+                    return value.user;
+                }
+                indexPrefix++;
+            }))
+            .catch((err) => {
+                console.log(err);
+            });
+
+        var indexID = 0;
+        var isIdentified = await receivedMessage.guild.members.fetch()
+            .then(guildMember => guildMember.map(function(value) {
+                if (value.user.id == arguments[0]) {
+                    return value.user;
+                }
+                indexID++;
+            }))
+            .catch((err) => {
+                console.log(err);
+            });
+
+        resolve (isMentioned || isSearched[indexPrefix] || isIdentified[indexID]);
+    })
 }
 
 // This function updates the prefix.
@@ -788,190 +992,6 @@ function updatePrefix(newPrefix) {
 function getCurrentPrefix() {
     var jsonFile = JSON.parse(fs.readFileSync("config.json").toString());
     return jsonFile["prefix"];
-}
-
-// Inspired by: https://dankmemer.lol/
-function createMainHelpEmbed() {
-    var prefix = getCurrentPrefix();
-    var helpEmbed = new Discord.MessageEmbed()
-        .setColor(randomColourPicker())
-        .setTitle(`**UNSW ChatBot's Command List**`)
-        .addFields(
-            {name: "🗺 **Directions**",
-                value: `\`\`${prefix} help directions\`\``, inline: true},
-            {name: "🔐 **Permissions**",
-                value: `\`\`${prefix} help permissions\`\``, inline: true},
-            {name: "\u200B", value: "\u200B"},
-            {name: "🎥 **Play**",
-                value: `\`\`${prefix} help play\`\``, inline: true},
-            {name: "🛠 **Prefix**",
-                value: `\`\`${prefix} help prefix\`\``, inline: true},
-            {name: "\u200B", value: "\u200B"},
-            {name: "💰 **Salary**",
-                value: `\`\`${prefix} help salary\`\``, inline: true},
-            {name: "🌞 **Weather**",
-                value: `\`\`${prefix} help weather\`\``, inline: true},
-            {name: "\u200B", value: "\u200B"},
-            {name: "📚 **Wikipedia**",
-                value: `\`\`${prefix} help wiki\`\``, inline: true},
-            {name: "🧐 **Whois**",
-                value: `\`\`${prefix} help whois\`\``, inline: true},
-        )
-        .setTimestamp()
-    return helpEmbed;
-}
-
-function helpCommand(receivedMessage, arguments) {
-    if (arguments.length == 0) {
-        receivedMessage.channel.send(createMainHelpEmbed());
-        // receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
-        // `${prefix}help [topic]`);
-    } else if (arguments.length == 1) {
-        var embed;
-        var prefix = getCurrentPrefix();
-        switch(arguments[0]) {
-            case "directions":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🗺 Directions")
-                    .addFields({name: "**Usage**",
-                    value: `\`\`${prefix} directions from <Australian Address>\`\``, inline:true},
-                    {name: "**Australian Addresses**",
-                    value:  `\`\`Please use:\n` +
-                    `1. https://www.openstreetmap.org/\n` +
-                    `2. https://maps.google.com.au/\n` +
-                    `3. https://www.bing.com/maps/\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} directions from 159 Church St Paramatta\n` +
-                    `${prefix} directions from 321 W Botany St Rockdale\n` +
-                    `${prefix} directions from 164 Campbell Parade Bondi Beach\n\`\`\``});
-                break;
-            case "permissions":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🔐 Permissions")
-                    .addFields({name: "**Usage**",
-                    value: `\`\`${prefix} <update keyword> <user> <permission>\`\``, inline:true},
-                    {name: "**Update Keywords:**",
-                    value:  `\`\`change, update, modify, set\n\`\``},
-                    {name: "**Users:**",
-                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
-                    {name: "**Permissions**",
-                    value: `\`\`https://discord.com/developers/docs/topics/permissions (text permissions)\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} modify @Discord#0001 CREATE INSTANT INVITE\n` +
-                    `${prefix} set 571769108131612111 VIEW CHANNEL and ADD REACTIONS\n` +
-                    `${prefix} update Dis USE EXTERNAL EMOJIS and ATTACH FILES\n\`\`\``});
-                break;
-            case "play":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🎥 Play")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} play <video>\`\``, inline:true},
-                    {name: "**Video:**",
-                    value:  `\`\`joker, shrek\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} play joker\n` +
-                    `${prefix} play shrek\n\`\`\``});
-                break;
-            case "prefix":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🛠 Prefix")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} <update keyword> prefix <linking word> <prefix name>\`\``, inline:true},
-                    {name: "**Update Keywords:**",
-                    value:  `\`\`change, update, modify, set\n\`\``},
-                    {name: "**Linking Words:**",
-                    value:  `\`\`with, as, to\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} modify prefix as usyd\n` +
-                    `${prefix} set prefix to uws\n` +
-                    `${prefix} update prefix to uow\n` +
-                    `${prefix} change prefix to tafe\n\`\`\``});
-                break;
-            case "salary":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("💰 Salary")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} salary <job>\`\``, inline:true},
-                    {name: "**Jobs:**",
-                    value:  `\`\`Any job from https://au.indeed.com/career\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} salary support worker\n` +
-                    `${prefix} salary data scientist\n` +
-                    `${prefix} salary java developer\n` +
-                    `${prefix} salary cleaner\n\`\`\``});
-                break;
-            case "weather":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🌞 Weather")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} weather <city>\`\``, inline:true},
-                    {name: "**City:**",
-                    value:  `\`\`Any city from with a populaton greater 15000 http://download.geonames.org/export/dump/cities15000.zip\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} weather sydney\n` +
-                    `${prefix} weather suva\n` +
-                    `${prefix} weather los angeles\n` +
-                    `${prefix} weather Cape Town\n\`\`\``});
-                break;
-            case "wiki":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("📚 Wikipedia")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} <wiki keyword> <query>\`\``, inline:true},
-                    {name: "**Wiki Keywords:**",
-                    value:  `\`\`find, wiki, wikime, wikipedia\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} wiki New Years\n` +
-                    `${prefix} wikime tesla inc\n` +
-                    `${prefix} wikipedia George Hotz\n` +
-                    `${prefix} find Singapore\n\`\`\``});
-                break;
-            case "whois":
-                embed = new Discord.MessageEmbed()
-                    .setColor(randomColourPicker())
-                    .setTitle("🧐 Whois")
-                    .addFields({name: "**Usage:**",
-                    value: `\`\`${prefix} whois <user>\`\``, inline:true},
-                    {name: "**Users:**",
-                    value:  `\`\`userID, username (or substring), @mention\n\`\``},
-                    {name: "**Examples:**",
-                    value:  `\`\`\`${prefix} whois 571769108131612111\n` +
-                    `${prefix} whois @Discord#0001\n` +
-                    `${prefix} whois  Discord\n\`\`\``});
-                break;
-            default:
-                embed = new Discord.MessageEmbed()
-                    .setColor(0xff4500)
-                    .setTitle(`I'm not sure what you need help with. Try: ` +
-                    `${prefix} help`);
-        }
-        receivedMessage.channel.send(embed);
-    } else {
-        receivedMessage.channel.send("It looks like you've specified to many " +
-        "arguments");
-    }
-}
-
-// This function will play a given movie (joker or shrek).
-function play(receivedMessage, arguments) {
-    if (arguments[0] == "movie") {
-        if (arguments[1] == "joker") {
-            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793723640495079444/Joker.webm")
-        } else if (arguments[1] == "shrek") {
-            receivedMessage.channel.send("https://cdn.discordapp.com/attachments/338533206825500673/793722980340727838/Shrek.webm")
-        }
-    } else {
-        var authorId = receivedMessage.author.id;
-        receivedMessage.channel.send(`Oh no! We could not find that video ` +
-        `<@${authorId}>. 😢`)
-    }
 }
 
 client.login(token);
