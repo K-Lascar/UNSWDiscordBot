@@ -12,7 +12,7 @@ After planning what to do with this bot, I've decided we should have the followi
 
 1. Job Salary Search  :white_check_mark:
 
-   - Depending on which field you are as a student, you may want to know what is the salary for your aspiring job.
+   - Depending on which field you are as a student, you may want to know what is the salary for your dream job.
    - I am thankful for [Indeed](indeed.com.au/) for still having this ability in place (if it weren't, I wouldn't be able to have this functionality)
      - If [Indeed](indeed.com.au/) removes this functionality, I will update the data source with [reed](https://www.reed.co.uk/developers/jobseeker) (UK Salary Data) and/or [usajobs.gov](https://developer.usajobs.gov/) (US Government Data of Jobs).
      - I had problems understanding the [documentation](https://opensource.indeedeng.io/api-documentation/) as some terms like [publishers](https://www.indeed.com/publisher) (this link redirects to hiring) no longer exist on the site, but are still used in the [documentation](https://opensource.indeedeng.io/api-documentation/docs/job-search/). The most similar example to this implementation is [jobbR](https://rdrr.io/github/dashee87/jobbR/man/getSalary.html), an Indeed API wrapper, however this package still uses the old publisher API (which no longer exists).
@@ -76,6 +76,7 @@ After planning what to do with this bot, I've decided we should have the followi
      <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/weather.gif" alt="weather" style="zoom:80%;" />
 
 7. Prefix Updater:white_check_mark:
+   
    - Since discord channels may have multiple prefixes with their server bots (clashes), they may want to change what this bot's prefix is.
 
 Happy Coding Everyone!!! :smile: 
