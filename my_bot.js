@@ -193,13 +193,11 @@ function createMainHelpEmbed() {
 }
 
 function helpCommand(receivedMessage, arguments) {
+    var prefix = getCurrentPrefix();
     if (arguments.length == 0) {
         receivedMessage.channel.send(createMainHelpEmbed());
-        // receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
-        // `${prefix}help [topic]`);
     } else if (arguments.length == 1) {
         var embed;
-        var prefix = getCurrentPrefix();
         switch(arguments[0]) {
             case "directions":
                 embed = new Discord.MessageEmbed()
@@ -325,8 +323,8 @@ function helpCommand(receivedMessage, arguments) {
         }
         receivedMessage.channel.send(embed);
     } else {
-        receivedMessage.channel.send("It looks like you've specified to many " +
-        "arguments");
+        receivedMessage.channel.send("I'm not sure what you need help with. Try: " +
+        `${prefix}help`);
     }
 }
 
@@ -641,7 +639,7 @@ function retrieveSalaryData(receivedMessage, job) {
         var salaries = jsonResp.salaries.salaries;
         if (salaries === {}) {
             receivedMessage.channel.send(`Sorry we could not find that ` +
-            `**${jobString}** title in **Indeed** ${retrieveConfusedEmojis()}.`);
+            `**${jobString}** title on **Indeed** ${retrieveConfusedEmojis()}.`);
         } else {
             var medianSalary = salaries.YEARLY.estimatedMedian;
             var maxSalary = salaries.YEARLY.estimatedMax;
