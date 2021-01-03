@@ -177,8 +177,8 @@ function processDirection(receivedMessage, arguments) {
 
 // This function will update either the prefix or the permissions for a specific
 // user in the given channel.
-function processUpdate(receivedMessage, arguments) {
-    var userExists = retrieveMentionUser(receivedMessage, arguments, 0);
+async function processUpdate(receivedMessage, arguments) {
+    var userExists = await retrieveMentionUser(receivedMessage, arguments, 0);
     if (arguments[0] == "prefix" && checkLinking(arguments[1])) {
 
         // First check if the prefix parsed is the same as the prefix given.
@@ -198,75 +198,79 @@ function processUpdate(receivedMessage, arguments) {
             receivedMessage.channel.send(`Sorry <@${authorId}> you do not ` +
             `have Admin permissions. ` + retrieveConfusedEmojis());
         }
-    } else if (userExists && checkLinking(arguments[1])) {
+    } else if (~~userExists[0] && checkLinking(arguments[1])) {
+        processPermissions(arguments, receivedMessage, userExists[0]);
 
-        // This will slice all the permissions from index 2 onwards.
-        // Then retrieve every unique permission from the message.
-        // If an Admin was to specify that userA would like to have permissionA
-        // and permissionB then we split it based on this.
-
-        // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
-        var permissionSliced = arguments.slice(2).join(" ");
-        permissionSliced = permissionSliced.split(new
-            RegExp(`${retrieveConjunctive().join("|")}`));
-
-        // https://stackoverflow.com/a/46294003
-        // https://reactgo.com/javascript-variable-regex/
-        permissionSliced.map(function(permission) {
-            var author = receivedMessage.author;
-            var authorId = author.id;
-
-            if (checkPermissionsExist(permission)) {
-
-                permission = permission.split(" ").join("_");
-
-                // We initially check if the user has the permissions specified.
-                // Otherwise we check if the user is administrator and change
-                // the specified user's permissions. If all else fails, we send
-                // a response, stating the user doesn't have administrator
-                // permissions.
-
-                // https://stackoverflow.com/a/60642417/14151099
-                if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
-                    receivedMessage.channel.send(`**${userExists.username}** ` +
-                    `already has this permission. ` + retrieveConfusedEmojis());
-                } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
-
-                    // Add requested user permissions to be added as well as old
-                    // permissions to be added.
-                    var channel = receivedMessage.channel;
-                    var currentPerm = channel.permissionOverwrites.values();
-
-                    // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
-                    channel.overwritePermissions([
-                        {
-                            id: userExists.id,
-                            allow: [permission],
-                        },
-                    ].concat(Array.from(currentPerm)))
-                    .catch(err => console.log(err));
-
-                    var readablePerm = permission.split("_").join(" ");
-                    receivedMessage.channel.send(`Granted **${readablePerm}**` +
-                    ` to ${userExists.username}! 😁`)
-                } else {
-
-                    // Unauthorised Response.
-                    receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
-                    `do not have Admin permissions. ` +
-                    retrieveConfusedEmojis());
-                }
-            } else {
-                receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
-                `permission doesn't exist, please provide a valid permission.`);
-            }
-        })
     } else {
 
         // Invalid Update Command.
         receivedMessage.channel.send(`What kind of update did you mean? ` +
         retrieveConfusedEmojis());
     }
+}
+
+function processPermissions(arguments, receivedMessage, userExists) {
+    // This will slice all the permissions from index 2 onwards.
+    // Then retrieve every unique permission from the message.
+    // If an Admin was to specify that userA would like to have permissionA
+    // and permissionB then we split it based on this.
+
+    // E.g. {prefix} update jennifer as/with/to {textPermissionA} and {textPermissionB}
+    var permissionSliced = arguments.slice(2).join(" ");
+    permissionSliced = permissionSliced.split(new
+        RegExp(`${retrieveConjunctive().join("|")}`));
+
+    // https://stackoverflow.com/a/46294003
+    // https://reactgo.com/javascript-variable-regex/
+    permissionSliced.map(function(permission) {
+        var author = receivedMessage.author;
+        var authorId = author.id;
+
+        if (checkPermissionsExist(permission)) {
+
+            permission = permission.split(" ").join("_");
+
+            // We initially check if the user has the permissions specified.
+            // Otherwise we check if the user is administrator and change
+            // the specified user's permissions. If all else fails, we send
+            // a response, stating the user doesn't have administrator
+            // permissions.
+
+            // https://stackoverflow.com/a/60642417/14151099
+            if (receivedMessage.channel.permissionsFor(userExists).has(permission)) {
+                receivedMessage.channel.send(`**${userExists.username}** ` +
+                `already has this permission. ` + retrieveConfusedEmojis());
+            } else if (receivedMessage.member.hasPermission("ADMINISTRATOR")) {
+
+                // Add requested user permissions to be added as well as old
+                // permissions to be added.
+                var channel = receivedMessage.channel;
+                var currentPerm = channel.permissionOverwrites.values();
+
+                // https://stackoverflow.com/questions/60608439/how-to-get-data-from-collection-map-in-discord-js
+                channel.overwritePermissions([
+                    {
+                        id: userExists.id,
+                        allow: [permission],
+                    },
+                ].concat(Array.from(currentPerm)))
+                .catch(err => console.log(err));
+
+                var readablePerm = permission.split("_").join(" ");
+                receivedMessage.channel.send(`Granted **${readablePerm}**` +
+                ` to ${userExists.username}! 😁`)
+            } else {
+
+                // Unauthorised Response.
+                receivedMessage.channel.send(`Sorry <@${authorId}> you ` +
+                `do not have Admin permissions. ` +
+                retrieveConfusedEmojis());
+            }
+        } else {
+            receivedMessage.channel.send(`Sorry <@${authorId}> that ` +
+            `permission doesn't exist, please provide a valid permission.`);
+        }
+    })
 }
 
 // This function will process a love request. If a user specifies their
@@ -296,20 +300,20 @@ function processLoveRequest(receivedMessage) {
 
 // This function will process a whoIs, identifying the user's details (username,
 // date joined, date created and profile).
-function processWhoIs(receivedMessage, arguments) {
+async function processWhoIs(receivedMessage, arguments) {
 
 
     // We check for all the possible queries (userID, user nickname and
     // if mentioned). Then we create a response as a result.
-    var user = retrieveMentionUser(receivedMessage, arguments, 0);
-    console.log(user);
-    if (user) {
+
+    var user = await retrieveMentionUser(receivedMessage, arguments, 0);
+    if (~~user[0]) {
         // Retrieve user object and from their we can find the member object.
         // Which we can then pass into the createWhoIsEmbed.
 
-        var userDetails = client.users.cache.get(user.id);
+        var userDetails = client.users.cache.get(user[0].id);
         var member = receivedMessage.guild.member(userDetails);
-        var embed = createWhoIsEmbed(member, user, userDetails);
+        var embed = createWhoIsEmbed(member, user[0], userDetails);
     } else {
 
         // error Embed.
@@ -751,24 +755,37 @@ function createWhoIsEmbed(memberObj, userObj, userDetails) {
 // This function will retrieve a user, checking either it was mentioned,
 // identified (retrieved by an ID) or the start of a given user's name is
 // specified.
+
+// https://stackoverflow.com/a/60783168/14151099
+// https://github.com/discordjs/discord.js/issues/4964
+
 function retrieveMentionUser(receivedMessage, arguments, index) {
-    // https://github.com/AnIdiotsGuide/discordjs-bot-guide/blob/master/frequently-asked-questions.md
-    var isMentioned = receivedMessage.mentions.users.first();
-    // https://stackoverflow.com/a/60783168/14151099
-    // https://github.com/discordjs/discord.js/issues/4964
-    var isIdentified = receivedMessage.guild.members.fetch(arguments[index])
-                        .then(guildMember => {
-                            console.log(guildMember.user);
-                            return guildMember.user;
-                        });
-    console.log(isIdentified);
-    isIdentified = 0;
-    // var isIdentified = receivedMessage.guild.members.cache.get(arguments[index]);
-    var isSelected = client.users.cache.find(user => user.username.startsWith(arguments[index]));
-    // var isSelected = receivedMessage.guild.members.fetch()
-    //                         .then(value => console.log(value));
-    // console.log(isMentioned || isIdentified || isSelected)
-    return isMentioned || isIdentified || isSelected;
+    var argumentsList = arguments;
+    var term = argumentsList[index];
+    return new Promise(async function(resolve) {
+        var isMentioned = receivedMessage.mentions.users.first();
+
+        // https://stackoverflow.com/a/64559391/14151099
+        var isIdentified = await receivedMessage.guild.members.fetch()
+            .then(guildMember => guildMember.map(function(value) {
+                if (value.user.username.startsWith(term)) {
+                    return value.user;
+                }
+            }))
+            .catch((err) => {
+                console.log(err);
+            });
+
+        var isSelected = await receivedMessage.guild.members.fetch(arguments[0])
+            .then(guildMember => {
+                return guildMember.user;
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+
+        resolve (isMentioned || isIdentified.slice(2) || isSelected);
+    })
 }
 
 // This function updates the prefix.
