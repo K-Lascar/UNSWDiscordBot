@@ -17,7 +17,7 @@ After planning what to do with this bot, I've decided we should have the followi
      - If [Indeed](indeed.com.au/) removes this functionality, I will update the data source with [reed](https://www.reed.co.uk/developers/jobseeker) (UK Salary Data) and/or [usajobs.gov](https://developer.usajobs.gov/) (US Government Data of Jobs).
      - I had problems understanding the [documentation](https://opensource.indeedeng.io/api-documentation/) as some terms like [publishers](https://www.indeed.com/publisher) (this link redirects to hiring) no longer exist on the site, but are still used in the [documentation](https://opensource.indeedeng.io/api-documentation/docs/job-search/). The most similar example to this implementation is [jobbR](https://rdrr.io/github/dashee87/jobbR/man/getSalary.html), an Indeed API wrapper, however this package still uses the old publisher API (which no longer exists).
      
-     <img src="Discord\assets\demonstration\salary.gif" alt="salary" style="zoom:80%;" />
+     <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/salary.gif" alt="salary" style="zoom:80%;" />
 2. Play :white_check_mark:
 
    - If you would like to watch a movie or video that is already on discord, this bot has you covered!
@@ -26,14 +26,14 @@ After planning what to do with this bot, I've decided we should have the followi
    
    - Retrieves the Creation Date
    
-     <img src="Discord\assets\demonstration\whois.gif" alt="whois" style="zoom:80%;" />
+     <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/whois.gif" alt="whois" style="zoom:80%;" />
 4. Wikipedia (used similarly in the AlphaBot system  <https://www.alphabotsystem.com/alpha-bot>):white_check_mark:
 
    - If a user queries a particular term using this command, they will receive a summary of this page alongside the image of that Wikipedia page as an embed. 
    
    - Made possible with the [WikiJS module] (https://dijs.github.io/wiki/index.html)
    
-     <img src="Discord\assets\demonstration\wiki.gif" alt="wiki" style="zoom:80%;" />
+     <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/wiki.gif" alt="wiki" style="zoom:80%;" />
    
 5. Directions​ :white_check_mark:
    - If a user asks for directions from a particular address, an image of that
@@ -59,7 +59,7 @@ After planning what to do with this bot, I've decided we should have the followi
 
    - The map is outputted as an embed.
 
-   <img src="Discord\assets\demonstration\direction.gif" alt="directions" style="zoom:80%;" />
+   <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/direction.gif" alt="directions" style="zoom:80%;" />
 
 6. Weather (used similarly in the old AlphaBot system  <https://www.alphabotsystem.com/alpha-bot> and in the Facebook AI chatbot https://github.com/girliemac/fb-apiai-bot-demo/)  :white_check_mark:
 
@@ -73,7 +73,7 @@ After planning what to do with this bot, I've decided we should have the followi
 
    - A map of the location is outputted in a embed.
 
-     <img src="Discord\assets\demonstration\weather.gif" alt="weather" style="zoom:80%;" />
+     <img src="https://github.com/LoneLascar/DiscordBot/blob/main/assets/demonstration/weather.gif" alt="weather" style="zoom:80%;" />
 
 7. Prefix Updater:white_check_mark:
    - Since discord channels may have multiple prefixes with their server bots (clashes), they may want to change what this bot's prefix is.
