@@ -166,7 +166,7 @@ function createMainHelpEmbed() {
     var prefix = getCurrentPrefix();
     var helpEmbed = new Discord.MessageEmbed()
         .setColor(randomColourPicker())
-        .setTitle(`**UNSW ChatBot's Command List**`)
+        .setTitle(`**UNSW Bot's Command List**`)
         .addFields(
             {name: "🗺 **Directions**",
                 value: `\`\`${prefix} help directions\`\``, inline: true},
